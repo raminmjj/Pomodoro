@@ -1,4 +1,3 @@
-using LiteDB;
 using Microsoft.Extensions.DependencyInjection;
 using Pomodoro.Application.Services;
 using Pomodoro.Domain.Entities;
@@ -8,6 +7,7 @@ using Pomodoro.Infrastructure.Autostart;
 using Pomodoro.Infrastructure.Hooks;
 using Pomodoro.Infrastructure.Notifications;
 using Pomodoro.Infrastructure.Persistence;
+using Pomodoro.Infrastructure.Persistence.Mappers;
 
 namespace Pomodoro.Infrastructure;
 
@@ -16,24 +16,32 @@ public static class ServiceCollectionExtensions
     /// <summary>
     /// Registers all infrastructure services. Call from Program.cs.
     /// </summary>
-    /// <param name="dbPath">Path to the LiteDB file.</param>
+    /// <param name="dbPath">Path to the SQLite file.</param>
     /// <param name="soundsDir">Path to the bundled WAV sounds directory.</param>
     public static IServiceCollection AddPomodoroInfrastructure(
         this IServiceCollection services,
         string dbPath,
         string soundsDir)
     {
-        // Persistence
-        services.AddSingleton<LiteDbContext>(_ => new LiteDbContext(
-            dbPath,
-            _.GetRequiredService<Microsoft.Extensions.Logging.ILogger<LiteDbContext>>()));
-        services.AddSingleton<ILiteCollection<TaskItem>>(sp => sp.GetRequiredService<LiteDbContext>().Tasks);
-        services.AddSingleton<ILiteCollection<PomodoroSession>>(sp => sp.GetRequiredService<LiteDbContext>().Sessions);
-        services.AddSingleton<ILiteCollection<BreakActivity>>(sp => sp.GetRequiredService<LiteDbContext>().Activities);
-        services.AddSingleton<ILiteCollection<Setting>>(sp => sp.GetRequiredService<LiteDbContext>().Settings);
-        services.AddSingleton<ILiteCollection<DailyReport>>(sp => sp.GetRequiredService<LiteDbContext>().Reports);
+        // Mappers (AOT-safe: concrete implementations, no reflection)
+        services.AddSingleton<ISqliteMapper<TaskItem>, TaskItemMapper>();
+        services.AddSingleton<ISqliteMapper<PomodoroSession>, PomodoroSessionMapper>();
+        services.AddSingleton<ISqliteMapper<BreakActivity>, BreakActivityMapper>();
+        services.AddSingleton<ISqliteMapper<Setting>, SettingMapper>();
+        services.AddSingleton<ISqliteMapper<DailyReport>, DailyReportMapper>();
 
-        services.AddSingleton(typeof(IRepository<>), typeof(LiteRepository<>));
+        // Persistence
+        services.AddSingleton<SqliteDbContext>(sp => new SqliteDbContext(
+            dbPath,
+            sp.GetRequiredService<ISqliteMapper<TaskItem>>(),
+            sp.GetRequiredService<ISqliteMapper<PomodoroSession>>(),
+            sp.GetRequiredService<ISqliteMapper<BreakActivity>>(),
+            sp.GetRequiredService<ISqliteMapper<Setting>>(),
+            sp.GetRequiredService<ISqliteMapper<DailyReport>>(),
+            sp.GetRequiredService<Microsoft.Extensions.Logging.ILogger<SqliteDbContext>>()));
+
+        // Generic repository
+        services.AddSingleton(typeof(IRepository<>), typeof(SqliteRepository<>));
 
         // Services
         services.AddSingleton<ISettingsService, SettingsService>();

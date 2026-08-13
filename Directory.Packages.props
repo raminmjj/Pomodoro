@@ -19,8 +19,8 @@
     <!-- MVVM -->
     <PackageVersion Include="CommunityToolkit.Mvvm" Version="8.4.2" />
 
-    <!-- Database -->
-    <PackageVersion Include="LiteDB" Version="5.0.21" />
+    <!-- Database (AOT-safe; LiteDB removed — reflection-based, incompatible with AOT) -->
+    <PackageVersion Include="Microsoft.Data.Sqlite" Version="10.0.11" />
 
     <!-- Hooks -->
     <PackageVersion Include="SharpHook" Version="7.1.3" />

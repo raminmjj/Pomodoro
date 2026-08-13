@@ -10,6 +10,7 @@ using Pomodoro.App.ViewModels;
 using Pomodoro.App.Views;
 using Pomodoro.Domain.Interfaces;
 using Pomodoro.Infrastructure;
+using Pomodoro.Infrastructure.Persistence;
 using Serilog;
 
 namespace Pomodoro.App;
@@ -25,6 +26,18 @@ internal sealed class Program
         // Build DI container
         var host = BuildHost(args);
         ServiceLocator.SetServiceProvider(host.Services);
+
+        // Initialize SQLite schema (CREATE TABLE IF NOT EXISTS) before anything reads/writes
+        try
+        {
+            var sqliteCtx = host.Services.GetRequiredService<SqliteDbContext>();
+            sqliteCtx.InitializeAsync().GetAwaiter().GetResult();
+        }
+        catch (Exception ex)
+        {
+            Log.Fatal(ex, "Failed to initialize SQLite database");
+            throw;
+        }
 
         // Hook the activity alert → notification
         WireActivityAlert(host.Services);
@@ -122,7 +135,7 @@ internal sealed class Program
 
     private static string GetAppDataDirectory()
     {
-        var baseDir = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
+        var baseDir = AppContext.BaseDirectory;
         var dir = Path.Combine(baseDir, "Pomodoro");
         if (!Directory.Exists(dir)) Directory.CreateDirectory(dir);
         return dir;

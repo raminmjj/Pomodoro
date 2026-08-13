@@ -81,7 +81,7 @@ public sealed partial class DailyReportViewModel : BaseViewModel
     {
         await RunSafeAsync(async () =>
         {
-            var report = await _reporting.GetDailyReportAsync(date.ToUniversalTime());
+            var report = await _reporting.GetDailyReportAsync(date);
             ReportDate = date.ToString("yyyy/MM/dd");
             TotalFocusTime = $"{report.TotalFocusSeconds / 3600}h {(report.TotalFocusSeconds % 3600) / 60}m";
             TotalBreakTime = $"{report.TotalBreakSeconds / 3600}h {(report.TotalBreakSeconds % 3600) / 60}m";

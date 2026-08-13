@@ -49,7 +49,7 @@ public sealed class DailyReportMapper : ISqliteMapper<DailyReport>
         {
             Id = Guid.Parse(r.GetString("Id")),
             Date = DateTime.Parse(r.GetString("Date"), CultureInfo.InvariantCulture,
-                DateTimeStyles.AssumeUniversal | DateTimeStyles.AdjustToUniversal),
+                DateTimeStyles.None),
             CompletedFocusSessions = r.GetInt32("CompletedFocusSessions"),
             TotalFocusSeconds = r.GetInt32("TotalFocusSeconds"),
             TotalBreakSeconds = r.GetInt32("TotalBreakSeconds"),

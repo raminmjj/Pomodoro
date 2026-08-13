@@ -78,6 +78,8 @@ public sealed partial class TaskListViewModel : BaseViewModel
     private void UseForFocus(TaskItem task)
     {
         SelectedTask = task;
+        var mainVm = ServiceLocator.GetRequiredService<MainViewModel>();
+        mainVm.SetActiveTask(task.Id, task.Title);
         _navigation.NavigateTo(AppView.Main);
     }
 

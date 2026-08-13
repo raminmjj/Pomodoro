@@ -32,24 +32,25 @@ public sealed class ReportingService : IReportingService
         _logger = logger;
     }
 
-    public async Task<DailyReport> GetDailyReportAsync(DateTime dateUtc, CancellationToken ct = default)
+    public async Task<DailyReport> GetDailyReportAsync(DateTime localDate, CancellationToken ct = default)
     {
-        var date = dateUtc.Date;
+        var date = localDate.Date;
         var existing = (await _reports.FindAsync(r => r.Date == date, ct)).FirstOrDefault();
         if (existing is not null) return existing;
-        return await RegenerateDailyReportAsync(dateUtc, ct);
+        return await RegenerateDailyReportAsync(localDate, ct);
     }
 
-    public async Task<DailyReport> RegenerateDailyReportAsync(DateTime dateUtc, CancellationToken ct = default)
+    public async Task<DailyReport> RegenerateDailyReportAsync(DateTime localDate, CancellationToken ct = default)
     {
-        var date = dateUtc.Date;
-        var dayStart = date;
-        var dayEnd = date.AddDays(1);
+        // Sessions are stored in UTC, so convert local day boundaries to UTC for querying
+        var date = localDate.Date;
+        var dayStartUtc = date.ToUniversalTime();
+        var dayEndUtc = date.AddDays(1).ToUniversalTime();
 
         var allSessions = await _sessions.FindAsync(
-            s => s.StartedAt >= dayStart && s.StartedAt < dayEnd, ct);
+            s => s.StartedAt >= dayStartUtc && s.StartedAt < dayEndUtc, ct);
         var allActivities = await _activities.FindAsync(
-            a => a.CapturedAt >= dayStart && a.CapturedAt < dayEnd, ct);
+            a => a.CapturedAt >= dayStartUtc && a.CapturedAt < dayEndUtc, ct);
 
         var focusSessions = allSessions.Where(s => s.Phase == SessionPhase.FocusRunning).ToList();
         var breakSessions = allSessions.Where(s => s.Phase == SessionPhase.BreakRunning).ToList();

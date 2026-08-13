@@ -1,6 +1,9 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-             x:Class="Pomodoro.App.Views.TaskListView">
+             xmlns:vm="using:Pomodoro.App.ViewModels"
+             xmlns:entities="using:Pomodoro.Domain.Entities"
+             x:Class="Pomodoro.App.Views.TaskListView"
+             x:DataType="vm:TaskListViewModel">
 
   <Border Padding="24">
     <Grid RowDefinitions="Auto,Auto,*,Auto" Margin="0,0,0,0">
@@ -22,7 +25,7 @@
       <ScrollViewer Grid.Row="2">
         <ItemsControl ItemsSource="{Binding Tasks}">
           <ItemsControl.ItemTemplate>
-            <DataTemplate>
+            <DataTemplate x:DataType="entities:TaskItem">
               <Border Classes="Card" Margin="0,4" Padding="12">
                 <Grid ColumnDefinitions="*,Auto,Auto" Background="Transparent">
                   <StackPanel Grid.Column="0" Spacing="2">

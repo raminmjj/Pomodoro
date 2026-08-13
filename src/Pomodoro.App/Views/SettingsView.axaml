@@ -1,6 +1,8 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-             x:Class="Pomodoro.App.Views.SettingsView">
+             xmlns:vm="using:Pomodoro.App.ViewModels"
+             x:Class="Pomodoro.App.Views.SettingsView"
+             x:DataType="vm:SettingsViewModel">
 
   <ScrollViewer Padding="24">
     <StackPanel Spacing="16" MaxWidth="480" HorizontalAlignment="Stretch">

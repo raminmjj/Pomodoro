@@ -1,7 +1,9 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:lvc="using:LiveChartsCore.SkiaSharpView.Avalonia"
-             x:Class="Pomodoro.App.Views.DailyReportView">
+             xmlns:vm="using:Pomodoro.App.ViewModels"
+             x:Class="Pomodoro.App.Views.DailyReportView"
+             x:DataType="vm:DailyReportViewModel">
 
   <ScrollViewer Padding="24">
     <StackPanel Spacing="16" MaxWidth="600" HorizontalAlignment="Stretch">

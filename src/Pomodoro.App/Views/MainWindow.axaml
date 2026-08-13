@@ -6,6 +6,7 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         mc:Ignorable="d" d:DesignWidth="480" d:DesignHeight="640"
         x:Class="Pomodoro.App.Views.MainWindow"
+        x:DataType="vm:MainViewModel"
         Title="Pomodoro"
         Width="520" Height="700"
         MinWidth="420" MinHeight="600"

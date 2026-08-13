@@ -10,9 +10,13 @@
     <TrimMode Condition="'$(PublishAot)' == 'true'">full</TrimMode>
     <PublishReadyToRun Condition="'$(PublishAot)' == 'true'">true</PublishReadyToRun>
     <InvariantGlobalization>false</InvariantGlobalization>
-    <AvaloniaUseCompiledBindingsByDefault>false</AvaloniaUseCompiledBindingsByDefault>
+    <AvaloniaUseCompiledBindingsByDefault>true</AvaloniaUseCompiledBindingsByDefault>
     <BuiltInComInteropSupport>true</BuiltInComInteropSupport>
   </PropertyGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="Pomodoro.App.Tests" />
+  </ItemGroup>
 
   <ItemGroup>
     <PackageReference Include="Avalonia" />

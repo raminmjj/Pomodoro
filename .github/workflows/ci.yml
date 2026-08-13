@@ -1,0 +1,86 @@
+name: CI/CD
+
+on:
+  push:
+    branches: [main, develop]
+    tags: ['v*']
+  pull_request:
+    branches: [main]
+
+env:
+  DOTNET_VERSION: '10.0.x'
+  DOTNET_ROLL_FORWARD: 'Major'
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: ${{ env.DOTNET_VERSION }}
+      - run: dotnet restore
+      - run: dotnet build --no-restore -c Release
+      - run: dotnet test --no-build -c Release --collect:"XPlat Code Coverage" --logger trx
+      - uses: codecov/codecov-action@v4
+        with:
+          file: '**/coverage.cobertura.xml'
+          fail_ci_if_error: false
+
+  publish:
+    needs: test
+    if: startsWith(github.ref, 'refs/tags/v')
+    strategy:
+      matrix:
+        include:
+          - os: windows-latest
+            rid: win-x64
+            artifact: Pomodoro-win-x64.zip
+          - os: macos-latest
+            rid: osx-arm64
+            artifact: Pomodoro-osx-arm64.tar.gz
+          - os: ubuntu-latest
+            rid: linux-x64
+            artifact: Pomodoro-linux-x64.tar.gz
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: ${{ env.DOTNET_VERSION }}
+
+      - name: Publish (AOT)
+        run: |
+          dotnet publish src/Pomodoro.App/Pomodoro.App.csproj \
+            -c Release \
+            -r ${{ matrix.rid }} \
+            /p:PublishAot=true \
+            /p:TrimMode=full \
+            /p:PublishSingleFile=true
+
+      - name: Package (Windows)
+        if: matrix.os == 'windows-latest'
+        run: |
+          Compress-Archive -Path bin/Release/publish/${{ matrix.rid }}/* -DestinationPath ${{ matrix.artifact }}
+
+      - name: Package (Unix)
+        if: matrix.os != 'windows-latest'
+        run: |
+          tar -czf ${{ matrix.artifact }} -C bin/Release/publish/${{ matrix.rid }} .
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.artifact }}
+          path: ${{ matrix.artifact }}
+
+  release:
+    needs: publish
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+      - uses: softprops/action-gh-release@v2
+        with:
+          generate_release_notes: true
+          files: |
+            *.zip
+            *.tar.gz

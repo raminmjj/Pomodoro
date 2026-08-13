@@ -1,0 +1,53 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             x:Class="Pomodoro.App.Views.TaskListView">
+
+  <Border Padding="24">
+    <Grid RowDefinitions="Auto,Auto,*,Auto" Margin="0,0,0,0">
+
+      <!-- Header -->
+      <StackPanel Grid.Row="0" Orientation="Horizontal" Spacing="12" Margin="0,0,0,16">
+        <TextBlock Classes="H1" Text="Tasks" VerticalAlignment="Center" />
+        <Button Content="Back" Classes="Secondary" Command="{Binding BackCommand}" />
+      </StackPanel>
+
+      <!-- Add task row -->
+      <StackPanel Grid.Row="1" Orientation="Horizontal" Spacing="8" Margin="0,0,0,16">
+        <TextBox Text="{Binding NewTaskTitle}" Watermark="Add a new task…"
+                 Width="320" KeyDown="OnAddKeyDown" />
+        <Button Content="+ Add" Classes="Primary" Command="{Binding AddCommand}" />
+      </StackPanel>
+
+      <!-- Task list -->
+      <ScrollViewer Grid.Row="2">
+        <ItemsControl ItemsSource="{Binding Tasks}">
+          <ItemsControl.ItemTemplate>
+            <DataTemplate>
+              <Border Classes="Card" Margin="0,4" Padding="12">
+                <Grid ColumnDefinitions="*,Auto,Auto" Background="Transparent">
+                  <StackPanel Grid.Column="0" Spacing="2">
+                    <TextBlock Text="{Binding Title}" FontWeight="SemiBold" />
+                    <TextBlock Classes="Caption"
+                               Text="{Binding CompletedPomodoros, StringFormat=\{0\} pomodoros done}" />
+                  </StackPanel>
+                  <Button Grid.Column="1" Content="Use"
+                          Classes="Secondary" Margin="4,0"
+                          Command="{Binding $parent[ItemsControl].DataContext.UseForFocusCommand}"
+                          CommandParameter="{Binding}" />
+                  <Button Grid.Column="2" Content="✕"
+                          Background="Transparent" Foreground="#EF4444"
+                          Command="{Binding $parent[ItemsControl].DataContext.DeleteCommand}"
+                          CommandParameter="{Binding}" />
+                </Grid>
+              </Border>
+            </DataTemplate>
+          </ItemsControl.ItemTemplate>
+        </ItemsControl>
+      </ScrollViewer>
+
+      <TextBlock Grid.Row="3" Classes="Caption"
+                 Text="{Binding Tasks.Count, StringFormat=\{0\} tasks total}"
+                 HorizontalAlignment="Center" Margin="0,8,0,0" />
+    </Grid>
+  </Border>
+</UserControl>

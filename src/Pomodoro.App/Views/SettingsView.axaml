@@ -1,0 +1,95 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             x:Class="Pomodoro.App.Views.SettingsView">
+
+  <ScrollViewer Padding="24">
+    <StackPanel Spacing="16" MaxWidth="480" HorizontalAlignment="Stretch">
+
+      <StackPanel Orientation="Horizontal" Spacing="12">
+        <TextBlock Classes="H1" Text="Settings" VerticalAlignment="Center" />
+        <Button Content="Back" Classes="Secondary" Command="{Binding BackCommand}" />
+      </StackPanel>
+
+      <Border Classes="Card">
+        <StackPanel Spacing="12">
+          <TextBlock Classes="H2" Text="Timing" />
+
+          <Grid ColumnDefinitions="200,*,Auto" Margin="0,4">
+            <TextBlock Text="Focus duration (min)" VerticalAlignment="Center" />
+            <NumericUpDown Grid.Column="1" Minimum="1" Maximum="120"
+                           Value="{Binding FocusMinutes}" />
+          </Grid>
+
+          <Grid ColumnDefinitions="200,*,Auto" Margin="0,4">
+            <TextBlock Text="Short break (min)" VerticalAlignment="Center" />
+            <NumericUpDown Grid.Column="1" Minimum="1" Maximum="60"
+                           Value="{Binding ShortBreakMinutes}" />
+          </Grid>
+
+          <Grid ColumnDefinitions="200,*,Auto" Margin="0,4">
+            <TextBlock Text="Long break (min)" VerticalAlignment="Center" />
+            <NumericUpDown Grid.Column="1" Minimum="1" Maximum="60"
+                           Value="{Binding LongBreakMinutes}" />
+          </Grid>
+
+          <Grid ColumnDefinitions="200,*,Auto" Margin="0,4">
+            <TextBlock Text="Sessions before long break" VerticalAlignment="Center" />
+            <NumericUpDown Grid.Column="1" Minimum="2" Maximum="10"
+                           Value="{Binding SessionsBeforeLong}" />
+          </Grid>
+
+          <CheckBox Content="Auto-start next focus after break"
+                    IsChecked="{Binding AutoStartBreak}" />
+        </StackPanel>
+      </Border>
+
+      <Border Classes="Card">
+        <StackPanel Spacing="12">
+          <TextBlock Classes="H2" Text="Activity Tracking" />
+          <CheckBox Content="Track keyboard/mouse during breaks"
+                    IsChecked="{Binding ActivityTrackingEnabled}" />
+
+          <Grid ColumnDefinitions="280,*,Auto" Margin="0,4">
+            <TextBlock Text="Keystroke alert threshold (per minute)" VerticalAlignment="Center" />
+            <NumericUpDown Grid.Column="1" Minimum="10" Maximum="300"
+                           Value="{Binding KeystrokeAlertThreshold}" />
+          </Grid>
+        </StackPanel>
+      </Border>
+
+      <Border Classes="Card">
+        <StackPanel Spacing="12">
+          <TextBlock Classes="H2" Text="Sound" />
+
+          <Grid ColumnDefinitions="200,*,Auto" Margin="0,4">
+            <TextBlock Text="Alarm sound" VerticalAlignment="Center" />
+            <ComboBox Grid.Column="1" ItemsSource="{Binding AvailableSounds}"
+                      SelectedItem="{Binding AlarmSoundName}" />
+          </Grid>
+
+          <Grid ColumnDefinitions="200,*,Auto" Margin="0,4">
+            <TextBlock Text="Volume" VerticalAlignment="Center" />
+            <Slider Grid.Column="1" Minimum="0" Maximum="1"
+                    Value="{Binding AlarmVolume}" TickFrequency="0.1" />
+          </Grid>
+        </StackPanel>
+      </Border>
+
+      <Border Classes="Card">
+        <StackPanel Spacing="12">
+          <TextBlock Classes="H2" Text="System" />
+          <CheckBox Content="Auto-start Pomodoro when I log in"
+                    IsChecked="{Binding AutoStartWithSystem}" />
+        </StackPanel>
+      </Border>
+
+      <Button Content="Save Settings" Classes="Primary"
+              Command="{Binding SaveCommand}" HorizontalAlignment="Right" />
+
+      <TextBlock Classes="Caption"
+                 Text="{Binding ErrorMessage}"
+                 Foreground="#EF4444"
+                 IsVisible="{Binding ErrorMessage, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+    </StackPanel>
+  </ScrollViewer>
+</UserControl>

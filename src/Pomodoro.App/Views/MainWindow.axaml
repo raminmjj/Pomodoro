@@ -1,0 +1,32 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:Pomodoro.App.ViewModels"
+        xmlns:views="using:Pomodoro.App.Views"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        mc:Ignorable="d" d:DesignWidth="480" d:DesignHeight="640"
+        x:Class="Pomodoro.App.Views.MainWindow"
+        Title="Pomodoro"
+        Width="520" Height="700"
+        MinWidth="420" MinHeight="600"
+        WindowStartupLocation="CenterScreen"
+        CanResize="True">
+
+  <Design.DataContext>
+    <vm:MainViewModel />
+  </Design.DataContext>
+
+  <Grid RowDefinitions="*,Auto">
+    <ContentControl Grid.Row="0" x:Name="ContentHost" Margin="0" />
+
+    <!-- Bottom navigation bar -->
+    <Border Grid.Row="1" Background="#FFFFFF" BorderBrush="#E2E8F0" BorderThickness="0,1,0,0" Padding="8">
+      <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Spacing="4">
+        <Button Content="Timer"      Classes="Secondary" Command="{Binding GoToMainCommand}"      Margin="2" />
+        <Button Content="Tasks"      Classes="Secondary" Command="{Binding GoToTasksCommand}"     Margin="2" />
+        <Button Content="Report"     Classes="Secondary" Command="{Binding GoToReportCommand}"    Margin="2" />
+        <Button Content="Settings"   Classes="Secondary" Command="{Binding GoToSettingsCommand}"  Margin="2" />
+      </StackPanel>
+    </Border>
+  </Grid>
+</Window>

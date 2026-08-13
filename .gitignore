@@ -1,0 +1,32 @@
+# Build artifacts
+bin/
+obj/
+*.user
+*.suo
+.vs/
+.idea/
+
+# Output
+artifacts/
+publish/
+*.nupkg
+*.snupkg
+
+# IDE
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+
+# Runtime
+*.db
+*.db-shm
+*.db-wal
+logs/
+*.log
+
+# OS
+.DS_Store
+.AppleDouble
+.LSOverride

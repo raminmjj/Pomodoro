@@ -1,0 +1,86 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:lvc="using:LiveChartsCore.SkiaSharpView.Avalonia"
+             x:Class="Pomodoro.App.Views.DailyReportView">
+
+  <ScrollViewer Padding="24">
+    <StackPanel Spacing="16" MaxWidth="600" HorizontalAlignment="Stretch">
+
+      <StackPanel Orientation="Horizontal" Spacing="12">
+        <TextBlock Classes="H1" Text="Daily Report" VerticalAlignment="Center" />
+        <Button Content="Back" Classes="Secondary" Command="{Binding BackCommand}" />
+      </StackPanel>
+
+      <TextBlock Classes="Caption" Text="{Binding ReportDate}" Margin="0,0,0,8" />
+
+      <!-- KPI cards -->
+      <UniformGrid Columns="2" Rows="3">
+        <Border Classes="Kpi" Margin="4">
+          <StackPanel Spacing="2">
+            <TextBlock Classes="Caption" Text="Focus Time" />
+            <TextBlock Classes="H2" Text="{Binding TotalFocusTime}" />
+          </StackPanel>
+        </Border>
+        <Border Classes="Kpi" Margin="4">
+          <StackPanel Spacing="2">
+            <TextBlock Classes="Caption" Text="Break Time" />
+            <TextBlock Classes="H2" Text="{Binding TotalBreakTime}" />
+          </StackPanel>
+        </Border>
+        <Border Classes="Kpi" Margin="4">
+          <StackPanel Spacing="2">
+            <TextBlock Classes="Caption" Text="Sessions" />
+            <TextBlock Classes="H2" Text="{Binding CompletedSessions}" />
+          </StackPanel>
+        </Border>
+        <Border Classes="Kpi" Margin="4">
+          <StackPanel Spacing="2">
+            <TextBlock Classes="Caption" Text="Top Task" />
+            <TextBlock Classes="H2" Text="{Binding TopTask}" />
+          </StackPanel>
+        </Border>
+        <Border Classes="Kpi" Margin="4">
+          <StackPanel Spacing="2">
+            <TextBlock Classes="Caption" Text="Keystrokes" />
+            <TextBlock Classes="H2" Text="{Binding TotalKeystrokes}" />
+          </StackPanel>
+        </Border>
+        <Border Classes="Kpi" Margin="4">
+          <StackPanel Spacing="2">
+            <TextBlock Classes="Caption" Text="Mouse Clicks" />
+            <TextBlock Classes="H2" Text="{Binding TotalMouseClicks}" />
+          </StackPanel>
+        </Border>
+      </UniformGrid>
+
+      <!-- Timeline -->
+      <Border Classes="Card">
+        <StackPanel Spacing="8">
+          <TextBlock Classes="H2" Text="Daily Timeline" />
+          <lvc:CartesianChart Height="200"
+                              Series="{Binding TimelineSeries}"
+                              XAxes="{Binding TimelineXAxes}"
+                              YAxes="{Binding TimelineYAxes}" />
+        </StackPanel>
+      </Border>
+
+      <!-- Hourly activity -->
+      <Border Classes="Card">
+        <StackPanel Spacing="8">
+          <TextBlock Classes="H2" Text="Hourly Activity" />
+          <lvc:CartesianChart Height="240"
+                              Series="{Binding ActivitySeries}"
+                              XAxes="{Binding ActivityXAxes}" />
+        </StackPanel>
+      </Border>
+
+      <!-- Task breakdown -->
+      <Border Classes="Card">
+        <StackPanel Spacing="8">
+          <TextBlock Classes="H2" Text="Task Breakdown" />
+          <lvc:PieChart Height="280" Series="{Binding TaskBreakdownSeries}" />
+        </StackPanel>
+      </Border>
+    </StackPanel>
+  </ScrollViewer>
+</UserControl>

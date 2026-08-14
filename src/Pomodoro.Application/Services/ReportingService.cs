@@ -35,6 +35,10 @@ public sealed class ReportingService : IReportingService
     public async Task<DailyReport> GetDailyReportAsync(DateTime localDate, CancellationToken ct = default)
     {
         var date = localDate.Date;
+        // Always regenerate for today since data changes throughout the day
+        if (date == DateTime.Today)
+            return await RegenerateDailyReportAsync(localDate, ct);
+
         var existing = (await _reports.FindAsync(r => r.Date == date, ct)).FirstOrDefault();
         if (existing is not null) return existing;
         return await RegenerateDailyReportAsync(localDate, ct);

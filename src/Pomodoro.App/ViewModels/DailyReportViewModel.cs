@@ -70,9 +70,14 @@ public sealed partial class DailyReportViewModel : BaseViewModel
         private set => SetProperty(ref _activityXAxes, value);
     }
 
-    public DailyReportViewModel(IReportingService reporting)
+    public DailyReportViewModel(IReportingService reporting, INavigationService navigation)
     {
         _reporting = reporting;
+        navigation.ViewChanged += view =>
+        {
+            if (view == AppView.DailyReport)
+                _ = LoadReportAsync(DateTime.Today);
+        };
         _ = LoadReportAsync(DateTime.Today);
     }
 

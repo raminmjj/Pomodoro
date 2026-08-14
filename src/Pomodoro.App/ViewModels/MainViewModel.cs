@@ -54,8 +54,6 @@ public sealed partial class MainViewModel : BaseViewModel, IDisposable
         await RunSafeAsync(async () =>
         {
             await _engine.StartFocusAsync(_activeTaskId);
-            if (_activeTaskId.HasValue)
-                await _taskService.IncrementPomodoroCountAsync(_activeTaskId.Value, Guid.Empty);
         });
     }
 
@@ -97,6 +95,12 @@ public sealed partial class MainViewModel : BaseViewModel, IDisposable
 
     private void OnStateChanged(object? sender, PomodoroStateEventArgs e)
     {
+        // Focus completed → break started: increment task pomodoro count
+        if (e.Phase == SessionPhase.BreakRunning && _activeTaskId.HasValue)
+        {
+            _ = _taskService.IncrementPomodoroCountAsync(_activeTaskId.Value, Guid.Empty);
+        }
+
         Dispatcher.UIThread.Post(() =>
         {
             CurrentPhase = e.Phase;

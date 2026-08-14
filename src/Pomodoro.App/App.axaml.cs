@@ -1,4 +1,5 @@
 using System;
+using System.Threading;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.ApplicationLifetimes;
@@ -14,11 +15,13 @@ internal sealed class App : Avalonia.Application
 {
     private readonly IServiceProvider _services;
     private readonly bool _startMinimized;
+    private readonly CancellationTokenSource _shutdownCts;
 
-    public App(IServiceProvider services, bool startMinimized)
+    public App(IServiceProvider services, bool startMinimized, CancellationTokenSource shutdownCts)
     {
         _services = services;
         _startMinimized = startMinimized;
+        _shutdownCts = shutdownCts;
     }
 
     public override void Initialize()
@@ -45,8 +48,7 @@ internal sealed class App : Avalonia.Application
             desktop.MainWindow = mainWindow;
             desktop.ShutdownMode = ShutdownMode.OnMainWindowClose;
 
-            // ← اینجا Dispatcher کاملاً آماده است → تیک را استارت می‌کنیم
-            Program.StartEngineTickLoop(_services);
+            Program.StartEngineTickLoop(_services, _shutdownCts.Token);
         }
 
         base.OnFrameworkInitializationCompleted();

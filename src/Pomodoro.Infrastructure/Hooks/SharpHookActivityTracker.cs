@@ -16,10 +16,11 @@ public sealed class SharpHookActivityTracker : IActivityTracker
 {
     private readonly IRepository<BreakActivity> _repo;
     private readonly ILogger<SharpHookActivityTracker> _logger;
-    private readonly SimpleGlobalHook _hook;
 
     private readonly Channel<BreakActivity> _channel;
     private readonly Task _consumerTask;
+
+    private SimpleGlobalHook? _hook;
 
     private int _keyPressCount;
     private int _mouseClickCount;
@@ -37,11 +38,6 @@ public sealed class SharpHookActivityTracker : IActivityTracker
     {
         _repo = repo;
         _logger = logger;
-        _hook = new SimpleGlobalHook();
-        _hook.KeyPressed += OnKeyPressed;
-        _hook.MouseClicked += OnMouseClicked;
-        _hook.MouseMoved += OnMouseMoved;
-        _hook.MouseDragged += OnMouseMoved;
 
         _channel = Channel.CreateBounded<BreakActivity>(new BoundedChannelOptions(256)
         {
@@ -72,18 +68,25 @@ public sealed class SharpHookActivityTracker : IActivityTracker
         _lastActivityUtc = DateTime.UtcNow;
         _hasLastMousePos = false;
 
-        // Run hook on a background thread — RunAsync blocks until disposed
-        _ = Task.Run(() =>
+        // Create a fresh hook instance each time (SimpleGlobalHook cannot be reused after Dispose)
+        var hook = new SimpleGlobalHook();
+        hook.KeyPressed += OnKeyPressed;
+        hook.MouseClicked += OnMouseClicked;
+        hook.MouseMoved += OnMouseMoved;
+        hook.MouseDragged += OnMouseMoved;
+        _hook = hook;
+
+        // RunAsync returns a Task that completes when Dispose() is called
+        _ = Task.Run(async () =>
         {
             try
             {
-                _hook.RunAsync().GetAwaiter().GetResult();
+                await hook.RunAsync();
             }
-            catch (Exception ex)
+            catch (Exception ex) when (ex is not ObjectDisposedException)
             {
                 _logger.LogError(ex, "SharpHook run failed");
 
-                // Detect Wayland and warn user about fallback
                 var waylandDisplay = Environment.GetEnvironmentVariable("WAYLAND_DISPLAY");
                 if (!string.IsNullOrEmpty(waylandDisplay))
                 {
@@ -94,7 +97,7 @@ public sealed class SharpHookActivityTracker : IActivityTracker
                         waylandDisplay);
                 }
             }
-        }, ct);
+        });
 
         _logger.LogInformation("Activity tracking started for break {BreakId}", breakSessionId);
         await Task.CompletedTask;
@@ -104,8 +107,10 @@ public sealed class SharpHookActivityTracker : IActivityTracker
     {
         if (Interlocked.Exchange(ref _isRunning, 0) == 0) return;
 
-        try { _hook.Dispose(); }
+        // Dispose stops the RunAsync task and releases native resources
+        try { _hook?.Dispose(); }
         catch (Exception ex) { _logger.LogWarning(ex, "Error disposing SharpHook"); }
+        _hook = null;
 
         _currentBreakId = null;
         _logger.LogInformation("Activity tracking stopped");
@@ -187,8 +192,12 @@ public sealed class SharpHookActivityTracker : IActivityTracker
     public async ValueTask DisposeAsync()
     {
         await StopTrackingAsync();
+
+        // Complete the channel so the consumer loop exits
         _channel.Writer.TryComplete();
-        try { await _consumerTask; } catch { /* ignore */ }
+        try { await _consumerTask.WaitAsync(TimeSpan.FromSeconds(3)); }
+        catch (TimeoutException) { _logger.LogWarning("Activity consumer task did not exit within timeout"); }
+        catch { /* ignore other exceptions */ }
     }
 
     private readonly record struct MousePoint(int X, int Y);

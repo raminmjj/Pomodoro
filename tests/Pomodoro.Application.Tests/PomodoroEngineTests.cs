@@ -19,6 +19,7 @@ public class PomodoroEngineTests
     private readonly ISettingsService _settings;
     private readonly INotificationService _notifications;
     private readonly ISoundPlayer _sound;
+    private readonly IActivityTracker _activityTracker;
     private readonly PomodoroEngine _engine;
 
     public PomodoroEngineTests()
@@ -27,6 +28,7 @@ public class PomodoroEngineTests
         _settings = Substitute.For<ISettingsService>();
         _notifications = Substitute.For<INotificationService>();
         _sound = Substitute.For<ISoundPlayer>();
+        _activityTracker = Substitute.For<IActivityTracker>();
 
         _settings.GetFocusDurationAsync(Arg.Any<CancellationToken>())
             .Returns(TimeSpan.FromMinutes(25));
@@ -43,7 +45,7 @@ public class PomodoroEngineTests
         _settings.GetAlarmVolumeAsync(Arg.Any<CancellationToken>())
             .Returns(1.0f);
 
-        _engine = new PomodoroEngine(_settings, _sessionRepo, _notifications, _sound, NullLogger<PomodoroEngine>.Instance);
+        _engine = new PomodoroEngine(_settings, _sessionRepo, _notifications, _sound, _activityTracker, NullLogger<PomodoroEngine>.Instance);
     }
 
     private static CancellationToken CT => TestContext.Current.CancellationToken;

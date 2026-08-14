@@ -18,7 +18,7 @@ namespace Pomodoro.App;
 internal sealed class Program
 {
     [STAThread]
-    public static void Main(string[] args)
+    public static async Task Main(string[] args)
     {
         // Parse CLI args early
         var minimized = Array.Exists(args, a => a == "--minimized");
@@ -42,9 +42,11 @@ internal sealed class Program
         // Hook the activity alert → notification
         WireActivityAlert(host.Services);
 
+        var shutdownCts = new CancellationTokenSource();
+
         try
         {
-            BuildAvaloniaApp(host.Services, minimized).StartWithClassicDesktopLifetime(args);
+            BuildAvaloniaApp(host.Services, minimized, shutdownCts).StartWithClassicDesktopLifetime(args);
         }
         catch (Exception ex)
         {
@@ -53,8 +55,17 @@ internal sealed class Program
         }
         finally
         {
+            // Signal background loops to stop
+            await shutdownCts.CancelAsync();
+            shutdownCts.Dispose();
+
+            // Async-dispose services (stops hooks, flushes channels, closes DB)
+            if (host is IAsyncDisposable asyncHost)
+                await asyncHost.DisposeAsync();
+            else
+                host.Dispose();
+
             Log.CloseAndFlush();
-            host.Dispose();
         }
     }
 
@@ -89,9 +100,9 @@ internal sealed class Program
         return host;
     }
 
-    private static AppBuilder BuildAvaloniaApp(IServiceProvider services, bool startMinimized)
+    private static AppBuilder BuildAvaloniaApp(IServiceProvider services, bool startMinimized, CancellationTokenSource shutdownCts)
     {
-        var builder = AppBuilder.Configure(() => new App(services, startMinimized))
+        var builder = AppBuilder.Configure(() => new App(services, startMinimized, shutdownCts))
             .UsePlatformDetect()
             .LogToTrace();
 
@@ -110,8 +121,7 @@ internal sealed class Program
         };
     }
 
-    // این متد حالا از App فراخوانی می‌شود (بعد از آماده شدن Dispatcher)
-    public static void StartEngineTickLoop(IServiceProvider services)
+    public static void StartEngineTickLoop(IServiceProvider services, CancellationToken shutdownToken)
     {
         _ = Task.Run(async () =>
         {
@@ -129,8 +139,14 @@ internal sealed class Program
             };
 
             tickScheduler.Start();
-            await Task.Delay(Timeout.Infinite);
-        });
+
+            // Wait until shutdown is requested instead of blocking forever
+            try { await Task.Delay(Timeout.Infinite, shutdownToken); }
+            catch (OperationCanceledException) { /* expected on shutdown */ }
+
+            tickScheduler.Stop();
+            Log.Information("Engine tick loop stopped");
+        }, CancellationToken.None);
     }
 
     private static string GetAppDataDirectory()

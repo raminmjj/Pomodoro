@@ -21,6 +21,7 @@ public sealed class PomodoroEngine : IPomodoroEngine
     private readonly IRepository<PomodoroSession> _sessionRepo;
     private readonly INotificationService _notifications;
     private readonly ISoundPlayer _sound;
+    private readonly IActivityTracker _activityTracker;
     private readonly ILogger<PomodoroEngine> _logger;
 
     private readonly object _stateLock = new();
@@ -78,12 +79,14 @@ public sealed class PomodoroEngine : IPomodoroEngine
         IRepository<PomodoroSession> sessionRepo,
         INotificationService notifications,
         ISoundPlayer sound,
+        IActivityTracker activityTracker,
         ILogger<PomodoroEngine> logger)
     {
         _settings = settings;
         _sessionRepo = sessionRepo;
         _notifications = notifications;
         _sound = sound;
+        _activityTracker = activityTracker;
         _logger = logger;
     }
 
@@ -192,6 +195,9 @@ public sealed class PomodoroEngine : IPomodoroEngine
             _plannedDuration = TimeSpan.Zero;
         }
 
+        // Stop activity tracking if stopping during a break
+        await _activityTracker.StopTrackingAsync(ct);
+
         if (session is not null)
         {
             session.EndedAt = DateTime.UtcNow;
@@ -231,6 +237,10 @@ public sealed class PomodoroEngine : IPomodoroEngine
         }
 
         Tick?.Invoke(this, remaining);
+
+        // Take activity snapshot during breaks
+        if (phase == SessionPhase.BreakRunning)
+            await _activityTracker.TakeSnapshotAsync(ct);
 
         if (remaining <= TimeSpan.Zero && session is not null)
             await OnPhaseCompletedAsync(session, ct);
@@ -287,6 +297,9 @@ public sealed class PomodoroEngine : IPomodoroEngine
                 CurrentPhase = SessionPhase.BreakRunning;
             }
 
+            // Start activity tracking during break
+            await _activityTracker.StartTrackingAsync(breakSession.Id, ct);
+
             await _notifications.ShowBreakStartAsync((int)breakDuration.TotalMinutes, isLongBreak, ct);
             RaiseStateChanged();
             _logger.LogInformation("Break started ({Minutes} min, long={IsLong})", breakDuration.TotalMinutes, isLongBreak);
@@ -294,6 +307,8 @@ public sealed class PomodoroEngine : IPomodoroEngine
         // Break completed → back to focus (auto-start if configured) or idle
         else if (completed.Phase == SessionPhase.BreakRunning)
         {
+            await _activityTracker.StopTrackingAsync(ct);
+
             lock (_stateLock)
             {
                 _currentSession = null;
@@ -343,10 +358,10 @@ public sealed class PomodoroEngine : IPomodoroEngine
         StateChanged?.Invoke(this, args);
     }
 
-    public ValueTask DisposeAsync()
+    public async ValueTask DisposeAsync()
     {
+        await _activityTracker.StopTrackingAsync();
         Tick = null;
         StateChanged = null;
-        return ValueTask.CompletedTask;
     }
 }

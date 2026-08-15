@@ -51,22 +51,19 @@ public sealed class PomodoroEngine : IPomodoroEngine
     {
         try
         {
-            // Find the most recent session to restore cycle index
             var allSessions = await _sessionRepo.GetAllAsync(ct);
-            var latestSession = allSessions
-                .OrderByDescending(s => s.StartedAt)
-                .FirstOrDefault();
+            var todayLocal = DateTime.Today;
 
-            if (latestSession is not null)
-            {
-                Volatile.Write(ref _cycleIndex, latestSession.CycleIndex);
-                _logger.LogInformation("Restored cycle counter to {CycleIndex} from session {SessionId}",
-                    latestSession.CycleIndex, latestSession.Id);
-            }
-            else
-            {
-                _logger.LogInformation("No previous sessions found — starting with cycle counter at 0");
-            }
+            // Count completed focus sessions that started today (local date).
+            // This resets the cycle counter at the start of each day.
+            var todayCompletedFocus = allSessions
+                .Count(s => s.Phase == SessionPhase.FocusRunning
+                         && s.WasCompleted
+                         && s.StartedAt.Date == todayLocal);
+
+            Volatile.Write(ref _cycleIndex, todayCompletedFocus);
+            _logger.LogInformation("Restored cycle counter to {CycleIndex} ({Count} completed focus sessions today)",
+                todayCompletedFocus, todayCompletedFocus);
         }
         catch (Exception ex)
         {

@@ -3,10 +3,15 @@
              xmlns:lvc="using:LiveChartsCore.SkiaSharpView.Avalonia"
              xmlns:vm="using:Pomodoro.App.ViewModels"
              x:Class="Pomodoro.App.Views.DailyReportView"
-             x:DataType="vm:DailyReportViewModel">
+             x:DataType="vm:DailyReportViewModel"
+             HorizontalAlignment="Stretch"
+             VerticalAlignment="Stretch">
 
-  <ScrollViewer Padding="24">
-    <StackPanel Spacing="16" MaxWidth="600" HorizontalAlignment="Stretch">
+  <Grid>
+    <!-- Padding on ScrollViewer is a known Avalonia bug (#12182) that clips the
+         scrollable extent — apply spacing via Margin on the content instead. -->
+    <ScrollViewer HorizontalScrollBarVisibility="Disabled">
+      <StackPanel Spacing="16" MaxWidth="600" HorizontalAlignment="Stretch" Margin="24">
 
       <StackPanel Orientation="Horizontal" Spacing="12">
         <TextBlock Classes="H1" Text="Daily Report" VerticalAlignment="Center" />
@@ -85,4 +90,5 @@
       </Border>
     </StackPanel>
   </ScrollViewer>
+  </Grid>
 </UserControl>

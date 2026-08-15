@@ -2,10 +2,15 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:vm="using:Pomodoro.App.ViewModels"
              x:Class="Pomodoro.App.Views.SettingsView"
-             x:DataType="vm:SettingsViewModel">
+             x:DataType="vm:SettingsViewModel"
+             HorizontalAlignment="Stretch"
+             VerticalAlignment="Stretch">
 
-  <ScrollViewer Padding="24">
-    <StackPanel Spacing="16" MaxWidth="480" HorizontalAlignment="Stretch">
+  <Grid>
+    <!-- Padding on ScrollViewer is a known Avalonia bug (#12182) that clips the
+         scrollable extent — apply spacing via Margin on the content instead. -->
+    <ScrollViewer HorizontalScrollBarVisibility="Disabled">
+      <StackPanel Spacing="16" MaxWidth="480" HorizontalAlignment="Stretch" Margin="24">
 
       <StackPanel Orientation="Horizontal" Spacing="12">
         <TextBlock Classes="H1" Text="Settings" VerticalAlignment="Center" />
@@ -94,4 +99,5 @@
                  IsVisible="{Binding ErrorMessage, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
     </StackPanel>
   </ScrollViewer>
+  </Grid>
 </UserControl>

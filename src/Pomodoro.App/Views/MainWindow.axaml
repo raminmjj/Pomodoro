@@ -18,7 +18,8 @@
   </Design.DataContext>
 
   <Grid RowDefinitions="*,Auto">
-    <ContentControl Grid.Row="0" x:Name="ContentHost" Margin="0" />
+    <!-- Content area: single-cell Grid stretches children to fill -->
+    <Grid Grid.Row="0" x:Name="ContentHost" ClipToBounds="True" />
 
     <!-- Bottom navigation bar -->
     <Border Grid.Row="1" Background="#FFFFFF" BorderBrush="#E2E8F0" BorderThickness="0,1,0,0" Padding="8">

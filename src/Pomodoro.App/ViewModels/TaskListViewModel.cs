@@ -24,6 +24,14 @@ public sealed partial class TaskListViewModel : BaseViewModel
     {
         _taskService = taskService;
         _navigation = navigation;
+
+        // Reload tasks every time the user navigates to this view
+        navigation.ViewChanged += view =>
+        {
+            if (view == AppView.TaskList)
+                _ = LoadAsync();
+        };
+
         _ = LoadAsync();
     }
 

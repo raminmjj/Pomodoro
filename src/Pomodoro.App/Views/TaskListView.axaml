@@ -3,7 +3,9 @@
              xmlns:vm="using:Pomodoro.App.ViewModels"
              xmlns:entities="using:Pomodoro.Domain.Entities"
              x:Class="Pomodoro.App.Views.TaskListView"
-             x:DataType="vm:TaskListViewModel">
+             x:DataType="vm:TaskListViewModel"
+             HorizontalAlignment="Stretch"
+             VerticalAlignment="Stretch">
 
   <Border Padding="24">
     <Grid RowDefinitions="Auto,Auto,*,Auto" Margin="0,0,0,0">

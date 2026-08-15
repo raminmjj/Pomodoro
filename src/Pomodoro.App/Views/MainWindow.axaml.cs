@@ -60,6 +60,8 @@ public sealed partial class MainWindow : Window
             AppView.DailyReport => new DailyReportView { DataContext = _reportVm! },
             _ => new MainView { DataContext = _mainVm },
         };
-        ContentHost.Content = content;
+
+        ContentHost.Children.Clear();
+        ContentHost.Children.Add(content);
     }
 }

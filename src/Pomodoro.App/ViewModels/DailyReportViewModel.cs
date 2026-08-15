@@ -20,6 +20,7 @@ public sealed partial class DailyReportViewModel : BaseViewModel
 {
     private readonly IReportingService _reporting;
 
+    [ObservableProperty] private DateTimeOffset? _selectedDate = new DateTimeOffset(DateTime.Today);
     [ObservableProperty] private string _reportDate = string.Empty;
     [ObservableProperty] private string _totalFocusTime = "0h 0m";
     [ObservableProperty] private string _totalBreakTime = "0h 0m";
@@ -27,6 +28,12 @@ public sealed partial class DailyReportViewModel : BaseViewModel
     [ObservableProperty] private string _topTask = "—";
     [ObservableProperty] private string _totalKeystrokes = "0";
     [ObservableProperty] private string _totalMouseClicks = "0";
+
+    partial void OnSelectedDateChanged(DateTimeOffset? value)
+    {
+        if (value.HasValue)
+            _ = LoadReportAsync(value.Value.DateTime);
+    }
 
     private ISeries[] _timelineSeries = Array.Empty<ISeries>();
     public ISeries[] TimelineSeries
@@ -84,6 +91,7 @@ public sealed partial class DailyReportViewModel : BaseViewModel
     [RelayCommand]
     public async Task LoadReportAsync(DateTime date)
     {
+        SelectedDate = new DateTimeOffset(date);
         await RunSafeAsync(async () =>
         {
             var report = await _reporting.GetDailyReportAsync(date);

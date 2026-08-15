@@ -18,7 +18,7 @@ namespace Pomodoro.App;
 internal sealed class Program
 {
     [STAThread]
-    public static async Task Main(string[] args)
+    public static void Main(string[] args)
     {
         // Parse CLI args early
         var minimized = Array.Exists(args, a => a == "--minimized");
@@ -43,30 +43,68 @@ internal sealed class Program
         WireActivityAlert(host.Services);
 
         var shutdownCts = new CancellationTokenSource();
+        var exitCode = 0;
 
         try
         {
+            Log.Information("Starting Avalonia desktop lifetime");
             BuildAvaloniaApp(host.Services, minimized, shutdownCts).StartWithClassicDesktopLifetime(args);
+            Log.Information("Avalonia desktop lifetime exited");
         }
         catch (Exception ex)
         {
             Log.Fatal(ex, "Application terminated unexpectedly");
-            throw;
+            exitCode = 1;
         }
         finally
         {
-            // Signal background loops to stop
-            await shutdownCts.CancelAsync();
-            shutdownCts.Dispose();
+            // Cleanup must NOT run on the main thread: even after the Avalonia loop
+            // exits, this thread still carries Avalonia's SynchronizationContext, and
+            // any await inside host disposal posts its continuation to the stopped
+            // dispatcher — deadlocking forever (the "process lingers in Task Manager"
+            // bug). A thread-pool thread has no sync context, so continuations run inline.
+            Task.Run(() => Shutdown(shutdownCts, host, exitCode)).GetAwaiter().GetResult();
+        }
+    }
 
-            // Async-dispose services (stops hooks, flushes channels, closes DB)
+    /// <summary>
+    /// Runs after the Avalonia loop exits, on a thread-pool thread.
+    /// A watchdog force-exits the process if cleanup ever deadlocks again.
+    /// </summary>
+    private static void Shutdown(CancellationTokenSource shutdownCts, IHost host, int exitCode)
+    {
+        using var watchdog = new Timer(
+            _ => Environment.Exit(exitCode),
+            null, TimeSpan.FromSeconds(10), Timeout.InfiniteTimeSpan);
+
+        Log.Information("Shutdown: begin");
+
+        // Signal background loops to stop
+        try { shutdownCts.Cancel(); }
+        catch (Exception ex) { Log.Warning(ex, "Shutdown signal failed"); }
+        shutdownCts.Dispose();
+        Log.Information("Shutdown: cancellation signalled");
+
+        // Dispose services synchronously (stops hooks, flushes channels, closes DB)
+        try
+        {
             if (host is IAsyncDisposable asyncHost)
-                await asyncHost.DisposeAsync();
+                asyncHost.DisposeAsync().AsTask().GetAwaiter().GetResult();
             else
                 host.Dispose();
-
-            Log.CloseAndFlush();
         }
+        catch (Exception ex)
+        {
+            Log.Fatal(ex, "Error during host disposal");
+            exitCode = 1;
+        }
+        Log.Information("Shutdown: host disposed");
+
+        Log.CloseAndFlush();
+
+        // Hard-exit so stray native threads (e.g. SharpHook's hook thread) can't
+        // keep the process alive after cleanup.
+        Environment.Exit(exitCode);
     }
 
     private static IHost BuildHost(string[] args)

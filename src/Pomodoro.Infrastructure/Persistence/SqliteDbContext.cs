@@ -76,6 +76,18 @@ public sealed class SqliteDbContext : IDisposable, IAsyncDisposable
         await ExecAsync(mapper.CreateTableSql, tx, ct);
         foreach (var idx in mapper.CreateIndexSqls)
             await ExecAsync(idx, tx, ct);
+
+        foreach (var sql in mapper.MigrateSqls)
+        {
+            try
+            {
+                await ExecAsync(sql, tx, ct);
+            }
+            catch (SqliteException ex) when (ex.Message.Contains("duplicate column name", StringComparison.OrdinalIgnoreCase))
+            {
+                // Column already exists — migration is idempotent
+            }
+        }
     }
 
     private async Task ExecAsync(string sql, SqliteTransaction tx, CancellationToken ct)

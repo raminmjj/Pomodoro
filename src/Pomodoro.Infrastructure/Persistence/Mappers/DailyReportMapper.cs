@@ -23,6 +23,8 @@ public sealed class DailyReportMapper : ISqliteMapper<DailyReport>
             TaskBreakdownJson TEXT NOT NULL,
             HourlyKeystrokesJson TEXT NOT NULL,
             HourlyMouseClicksJson TEXT NOT NULL,
+            HourlyFocusMinutesJson TEXT NOT NULL,
+            HourlyBreakMinutesJson TEXT NOT NULL,
             GeneratedAt TEXT NOT NULL
         );
         """;
@@ -32,15 +34,23 @@ public sealed class DailyReportMapper : ISqliteMapper<DailyReport>
         "CREATE INDEX IF NOT EXISTS idx_reports_date ON reports(Date);",
     };
 
+    public IReadOnlyList<string> MigrateSqls => new[]
+    {
+        "ALTER TABLE reports ADD COLUMN HourlyFocusMinutesJson TEXT NOT NULL DEFAULT '[]';",
+        "ALTER TABLE reports ADD COLUMN HourlyBreakMinutesJson TEXT NOT NULL DEFAULT '[]';",
+    };
+
     public string UpsertSql => """
         INSERT OR REPLACE INTO reports
             (Id, Date, CompletedFocusSessions, TotalFocusSeconds, TotalBreakSeconds,
              TotalKeystrokes, TotalMouseClicks, TotalIdleSeconds,
-             TaskBreakdownJson, HourlyKeystrokesJson, HourlyMouseClicksJson, GeneratedAt)
+             TaskBreakdownJson, HourlyKeystrokesJson, HourlyMouseClicksJson,
+             HourlyFocusMinutesJson, HourlyBreakMinutesJson, GeneratedAt)
         VALUES
             (@Id, @Date, @CompletedFocusSessions, @TotalFocusSeconds, @TotalBreakSeconds,
              @TotalKeystrokes, @TotalMouseClicks, @TotalIdleSeconds,
-             @TaskBreakdownJson, @HourlyKeystrokesJson, @HourlyMouseClicksJson, @GeneratedAt);
+             @TaskBreakdownJson, @HourlyKeystrokesJson, @HourlyMouseClicksJson,
+             @HourlyFocusMinutesJson, @HourlyBreakMinutesJson, @GeneratedAt);
         """;
 
     public DailyReport Read(SqliteDataReader r)
@@ -59,6 +69,8 @@ public sealed class DailyReportMapper : ISqliteMapper<DailyReport>
             TaskBreakdownJson = r.GetString("TaskBreakdownJson"),
             HourlyKeystrokesJson = r.GetString("HourlyKeystrokesJson"),
             HourlyMouseClicksJson = r.GetString("HourlyMouseClicksJson"),
+            HourlyFocusMinutesJson = r.GetString("HourlyFocusMinutesJson"),
+            HourlyBreakMinutesJson = r.GetString("HourlyBreakMinutesJson"),
             GeneratedAt = DateTime.Parse(r.GetString("GeneratedAt"), CultureInfo.InvariantCulture,
                 DateTimeStyles.AssumeUniversal | DateTimeStyles.AdjustToUniversal),
         };
@@ -77,6 +89,8 @@ public sealed class DailyReportMapper : ISqliteMapper<DailyReport>
         cmd.Parameters.AddWithValue("@TaskBreakdownJson", rep.TaskBreakdownJson ?? "[]");
         cmd.Parameters.AddWithValue("@HourlyKeystrokesJson", rep.HourlyKeystrokesJson ?? "[]");
         cmd.Parameters.AddWithValue("@HourlyMouseClicksJson", rep.HourlyMouseClicksJson ?? "[]");
+        cmd.Parameters.AddWithValue("@HourlyFocusMinutesJson", rep.HourlyFocusMinutesJson ?? "[]");
+        cmd.Parameters.AddWithValue("@HourlyBreakMinutesJson", rep.HourlyBreakMinutesJson ?? "[]");
         cmd.Parameters.AddWithValue("@GeneratedAt", rep.GeneratedAt.ToString("O"));
     }
 }

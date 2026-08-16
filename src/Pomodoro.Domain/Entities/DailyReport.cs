@@ -32,5 +32,11 @@ public sealed class DailyReport
     /// <summary>JSON-serialised list of 24 ints (one per hour) of mouse-click counts.</summary>
     public string HourlyMouseClicksJson { get; set; } = "[]";
 
+    /// <summary>JSON-serialised list of 24 ints (one per hour) of focus minutes.</summary>
+    public string HourlyFocusMinutesJson { get; set; } = "[]";
+
+    /// <summary>JSON-serialised list of 24 ints (one per hour) of break minutes.</summary>
+    public string HourlyBreakMinutesJson { get; set; } = "[]";
+
     public DateTime GeneratedAt { get; set; } = DateTime.UtcNow;
 }

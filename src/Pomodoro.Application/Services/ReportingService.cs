@@ -40,7 +40,11 @@ public sealed class ReportingService : IReportingService
             return await RegenerateDailyReportAsync(localDate, ct);
 
         var existing = (await _reports.FindAsync(r => r.Date == date, ct)).FirstOrDefault();
-        if (existing is not null) return existing;
+        // Reports cached before the hourly timeline fields existed hold empty
+        // arrays — regenerate them once from the still-available session rows.
+        if (existing is not null
+            && existing.HourlyFocusMinutesJson != "[]"
+            && existing.HourlyBreakMinutesJson != "[]") return existing;
         return await RegenerateDailyReportAsync(localDate, ct);
     }
 
@@ -104,6 +108,33 @@ public sealed class ReportingService : IReportingService
             hourlyClicks[hour] += a.MouseClickCount;
         }
 
+        // Per-hour focus/break minutes from actual session times,
+        // splitting sessions that span an hour boundary across both hours.
+        var hourlyFocusMinutes = new int[24];
+        var hourlyBreakMinutes = new int[24];
+        foreach (var s in allSessions)
+        {
+            var isFocus = s.Phase == SessionPhase.FocusRunning;
+            var seconds = s.ActualDurationSec > 0 ? s.ActualDurationSec : s.PlannedDurationSec;
+            if (seconds <= 0) continue;
+
+            var start = s.StartedAt.ToLocalTime();
+            var end = start.AddSeconds(seconds);
+            var cursor = start;
+            while (cursor < end && cursor.Date == date)
+            {
+                var hourEnd = cursor.Date.AddHours(cursor.Hour + 1);
+                var slice = (end < hourEnd ? end : hourEnd) - cursor;
+                var wholeMinutes = (int)slice.TotalMinutes;
+                if (wholeMinutes > 0)
+                {
+                    if (isFocus) hourlyFocusMinutes[cursor.Hour] += wholeMinutes;
+                    else hourlyBreakMinutes[cursor.Hour] += wholeMinutes;
+                }
+                cursor = hourEnd;
+            }
+        }
+
         var report = new DailyReport
         {
             Date = date,
@@ -116,6 +147,8 @@ public sealed class ReportingService : IReportingService
             TaskBreakdownJson = breakdownJson,
             HourlyKeystrokesJson = JsonSerializer.Serialize(hourlyKeys, ReportJsonContext.Default.Int32Array),
             HourlyMouseClicksJson = JsonSerializer.Serialize(hourlyClicks, ReportJsonContext.Default.Int32Array),
+            HourlyFocusMinutesJson = JsonSerializer.Serialize(hourlyFocusMinutes, ReportJsonContext.Default.Int32Array),
+            HourlyBreakMinutesJson = JsonSerializer.Serialize(hourlyBreakMinutes, ReportJsonContext.Default.Int32Array),
             GeneratedAt = DateTime.UtcNow,
         };
 

@@ -118,50 +118,29 @@ public sealed partial class DailyReportViewModel : BaseViewModel
     }
 
     /// <summary>
-    /// Builds a timeline chart showing Focus and Break sessions across the day.
-    /// Uses stacked columns where each hour shows minutes spent in Focus vs Break.
+    /// Builds a timeline chart showing Focus and Break minutes across the day.
+    /// Uses per-hour minutes computed from actual session times in the report.
     /// </summary>
     private void BuildTimelineSeries(Domain.Entities.DailyReport report)
     {
-        // We use hourly buckets (0-23) with focus/break minutes as stacked columns
-        var focusMinutes = new double[24];
-        var breakMinutes = new double[24];
-
-        // Derive from total seconds distributed proportionally across hours
-        // Since we don't have per-hour session data in the report, we use
-        // the hourly activity data as a proxy for active hours
-        var hourlyKeys = JsonSerializer.Deserialize(report.HourlyKeystrokesJson, ReportJsonContext.Default.Int32Array)
+        var focusMinutes = JsonSerializer.Deserialize(report.HourlyFocusMinutesJson, ReportJsonContext.Default.Int32Array)
             ?? new int[24];
-        var totalActiveHours = hourlyKeys.Count(k => k > 0);
-
-        if (totalActiveHours > 0 && report.TotalFocusSeconds > 0)
-        {
-            var avgFocusPerActiveHour = (double)report.TotalFocusSeconds / 60.0 / totalActiveHours;
-            var avgBreakPerActiveHour = (double)report.TotalBreakSeconds / 60.0 / totalActiveHours;
-
-            for (int h = 0; h < 24; h++)
-            {
-                if (hourlyKeys[h] > 0)
-                {
-                    focusMinutes[h] = Math.Round(avgFocusPerActiveHour, 1);
-                    breakMinutes[h] = Math.Round(avgBreakPerActiveHour, 1);
-                }
-            }
-        }
+        var breakMinutes = JsonSerializer.Deserialize(report.HourlyBreakMinutesJson, ReportJsonContext.Default.Int32Array)
+            ?? new int[24];
 
         TimelineSeries = new ISeries[]
         {
             new ColumnSeries<double>
             {
                 Name = "Focus",
-                Values = focusMinutes,
+                Values = focusMinutes.Select(m => (double)m).ToArray(),
                 Fill = new SolidColorPaint(new SKColor(0x1B, 0x6B, 0x7A)),
                 MaxBarWidth = 14,
             },
             new ColumnSeries<double>
             {
                 Name = "Break",
-                Values = breakMinutes,
+                Values = breakMinutes.Select(m => (double)m).ToArray(),
                 Fill = new SolidColorPaint(new SKColor(0x37, 0xDC, 0xF2)),
                 MaxBarWidth = 14,
             },

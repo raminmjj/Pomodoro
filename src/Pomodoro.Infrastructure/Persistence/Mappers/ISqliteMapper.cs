@@ -24,6 +24,13 @@ public interface ISqliteMapper<T> where T : class
     /// <summary>CREATE INDEX statements (may be empty).</summary>
     IReadOnlyList<string> CreateIndexSqls { get; }
 
+    /// <summary>
+    /// ALTER TABLE statements adding columns introduced after the initial schema.
+    /// Executed on every startup; "duplicate column name" errors are ignored so
+    /// the statements are idempotent on both fresh and already-migrated databases.
+    /// </summary>
+    IReadOnlyList<string> MigrateSqls => Array.Empty<string>();
+
     /// <summary>INSERT OR REPLACE INTO statement with @parameters matching AddParameters.</summary>
     string UpsertSql { get; }
 

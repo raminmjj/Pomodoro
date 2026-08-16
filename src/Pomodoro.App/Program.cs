@@ -3,6 +3,7 @@ using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
 using Avalonia;
+using Avalonia.Labs.Notifications;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Pomodoro.App.Services;
@@ -142,6 +143,14 @@ internal sealed class Program
     {
         var builder = AppBuilder.Configure(() => new App(services, startMinimized, shutdownCts))
             .UsePlatformDetect()
+            .WithAppNotifications(new AppNotificationOptions
+            {
+                // The COM activator is only needed for toast click callbacks,
+                // which this app doesn't use — and its registration NREs on
+                // some machines. Skip it; toasts still show normally.
+                DisableComServer = true,
+                AppName = "Shahsavar Pomodoro 2500",
+            })
             .LogToTrace();
 
         return builder;

@@ -1,6 +1,5 @@
 using System;
 using Avalonia.Controls;
-using Avalonia.Controls.Notifications;
 using Microsoft.Extensions.DependencyInjection;
 using Pomodoro.App.Services;
 using Pomodoro.App.ViewModels;
@@ -15,16 +14,9 @@ public sealed partial class MainWindow : Window
     private DailyReportViewModel? _reportVm;
     private INavigationService? _navigation;
 
-    public WindowNotificationManager NotificationMgr { get; }
-
     public MainWindow()
     {
         InitializeComponent();
-        NotificationMgr = new WindowNotificationManager(this)
-        {
-            Position = NotificationPosition.BottomRight,
-            MaxItems = 3,
-        };
     }
 
     public MainWindow(

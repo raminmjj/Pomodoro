@@ -4,8 +4,8 @@ using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Markup.Xaml;
-using Avalonia.Controls.Notifications;
 using Microsoft.Extensions.DependencyInjection;
+using Pomodoro.App.Services;
 using Pomodoro.App.Views;
 using Pomodoro.Infrastructure.Notifications;
 
@@ -35,9 +35,10 @@ internal sealed class App : Avalonia.Application
         {
             var mainWindow = _services.GetRequiredService<MainWindow>();
 
-            // Wire notification sink
+            // Wire notification sink — OS-level desktop notifications
+            // (Windows toast, macOS Notification Center, Linux notify-send)
             var notifService = _services.GetRequiredService<AvaloniaNotificationService>();
-            notifService.Initialize(new AvaloniaNotificationSink(mainWindow.NotificationMgr));
+            notifService.Initialize(new DesktopNotificationSink(mainWindow));
 
             if (_startMinimized)
             {
@@ -52,30 +53,5 @@ internal sealed class App : Avalonia.Application
         }
 
         base.OnFrameworkInitializationCompleted();
-    }
-}
-
-/// <summary>
-/// Adapter from Avalonia WindowNotificationManager to INotificationSink.
-/// </summary>
-internal sealed class AvaloniaNotificationSink : INotificationSink
-{
-    private readonly WindowNotificationManager _manager;
-
-    public AvaloniaNotificationSink(WindowNotificationManager manager)
-    {
-        _manager = manager;
-    }
-
-    public void Show(string title, string body, Pomodoro.Domain.Enums.NotificationSeverity severity)
-    {
-        var type = severity switch
-        {
-            Pomodoro.Domain.Enums.NotificationSeverity.Success => NotificationType.Success,
-            Pomodoro.Domain.Enums.NotificationSeverity.Warning => NotificationType.Warning,
-            Pomodoro.Domain.Enums.NotificationSeverity.Error => NotificationType.Error,
-            _ => NotificationType.Information,
-        };
-        _manager.Show(new Notification(title, body, type));
     }
 }

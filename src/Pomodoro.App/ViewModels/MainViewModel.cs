@@ -15,22 +15,39 @@ public sealed partial class MainViewModel : BaseViewModel, IDisposable
     private readonly IPomodoroEngine _engine;
     private readonly INavigationService _navigation;
     private readonly ITaskService _taskService;
+    private readonly ISettingsService _settings;
 
     public MainViewModel(
         IPomodoroEngine engine,
         INavigationService navigation,
-        ITaskService taskService)
+        ITaskService taskService,
+        ISettingsService settings)
     {
         _engine = engine;
         _navigation = navigation;
         _taskService = taskService;
+        _settings = settings;
         _engine.StateChanged += OnStateChanged;
         _engine.Tick += OnTick;
+        _navigation.ViewChanged += OnViewChanged;
+        _ = LoadInitialTimerAsync();
         UpdateCanExecute();
     }
 
+    private void OnViewChanged(AppView view)
+    {
+        if (view == AppView.Main && CurrentPhase == SessionPhase.Idle)
+            _ = LoadInitialTimerAsync();
+    }
+
+    private async Task LoadInitialTimerAsync()
+    {
+        var focusDuration = await _settings.GetFocusDurationAsync();
+        TimeRemaining = $"{(int)focusDuration.TotalMinutes:D2}:00";
+    }
+
     [ObservableProperty] private string _currentTaskTitle = "(no task)";
-    [ObservableProperty] private string _timeRemaining = "25:00";
+    [ObservableProperty] private string _timeRemaining = "00:00";
     [ObservableProperty] private SessionPhase _currentPhase = SessionPhase.Idle;
     [ObservableProperty] private double _progressPercent;
     [ObservableProperty] private bool _canStart = true;

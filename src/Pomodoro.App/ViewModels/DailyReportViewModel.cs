@@ -77,6 +77,27 @@ public sealed partial class DailyReportViewModel : BaseViewModel
         private set => SetProperty(ref _activityXAxes, value);
     }
 
+    private ISeries[] _taskActivitySeries = Array.Empty<ISeries>();
+    public ISeries[] TaskActivitySeries
+    {
+        get => _taskActivitySeries;
+        private set => SetProperty(ref _taskActivitySeries, value);
+    }
+
+    private Axis[] _taskActivityXAxes = Array.Empty<Axis>();
+    public Axis[] TaskActivityXAxes
+    {
+        get => _taskActivityXAxes;
+        private set => SetProperty(ref _taskActivityXAxes, value);
+    }
+
+    private Axis[] _taskActivityYAxes = Array.Empty<Axis>();
+    public Axis[] TaskActivityYAxes
+    {
+        get => _taskActivityYAxes;
+        private set => SetProperty(ref _taskActivityYAxes, value);
+    }
+
     public DailyReportViewModel(IReportingService reporting, INavigationService navigation)
     {
         _reporting = reporting;
@@ -104,9 +125,13 @@ public sealed partial class DailyReportViewModel : BaseViewModel
 
             var breakdown = JsonSerializer.Deserialize(report.TaskBreakdownJson, ReportJsonContext.Default.ListTaskBreakdownDto)
                 ?? new();
-            TopTask = breakdown.OrderByDescending(b => b.MinutesSpent).FirstOrDefault()?.TaskTitle ?? "—";
+            TopTask = breakdown
+                .Where(b => b.TaskId != Guid.Empty)
+                .OrderByDescending(b => b.MinutesSpent)
+                .FirstOrDefault()?.TaskTitle ?? "—";
 
             BuildTaskBreakdownSeries(breakdown);
+            BuildTaskActivitySeries(breakdown);
             BuildTimelineSeries(report);
 
             var hourlyKeys = JsonSerializer.Deserialize(report.HourlyKeystrokesJson, ReportJsonContext.Default.Int32Array)
@@ -185,6 +210,54 @@ public sealed partial class DailyReportViewModel : BaseViewModel
             Values = new double[] { b.MinutesSpent },
             Fill = new SolidColorPaint(palette[i % palette.Length]),
         }).Cast<ISeries>().ToArray();
+    }
+
+    /// <summary>
+    /// Horizontal bar chart of focus minutes per task for the day.
+    /// Ascending order so the largest task renders at the top of the chart
+    /// (row series plot the first label at the bottom).
+    /// </summary>
+    private void BuildTaskActivitySeries(List<TaskBreakdownDto> breakdown)
+    {
+        if (breakdown.Count == 0)
+        {
+            TaskActivitySeries = Array.Empty<ISeries>();
+            TaskActivityXAxes = Array.Empty<Axis>();
+            TaskActivityYAxes = Array.Empty<Axis>();
+            return;
+        }
+
+        var ordered = breakdown.OrderBy(b => b.MinutesSpent).ToList();
+        TaskActivitySeries = new ISeries[]
+        {
+            new RowSeries<double>
+            {
+                Name = "Focus minutes",
+                Values = ordered.Select(b => (double)b.MinutesSpent).ToArray(),
+                Fill = new SolidColorPaint(new SKColor(0x1B, 0x6B, 0x7A)),
+                MaxBarWidth = 18,
+            },
+        };
+
+        TaskActivityYAxes = new Axis[]
+        {
+            new Axis
+            {
+                Labels = ordered.Select(b => b.TaskTitle).ToArray(),
+                LabelsPaint = new SolidColorPaint(new SKColor(0x5B, 0x6B, 0x7D)),
+                TextSize = 11,
+            }
+        };
+
+        TaskActivityXAxes = new Axis[]
+        {
+            new Axis
+            {
+                Name = "Minutes",
+                LabelsPaint = new SolidColorPaint(new SKColor(0x5B, 0x6B, 0x7D)),
+                TextSize = 10,
+            }
+        };
     }
 
     private void BuildActivitySeries(int[] hourlyKeys, int[] hourlyClicks)

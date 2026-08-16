@@ -34,17 +34,9 @@ public sealed class ReportingService : IReportingService
 
     public async Task<DailyReport> GetDailyReportAsync(DateTime localDate, CancellationToken ct = default)
     {
-        var date = localDate.Date;
-        // Always regenerate for today since data changes throughout the day
-        if (date == DateTime.Today)
-            return await RegenerateDailyReportAsync(localDate, ct);
-
-        var existing = (await _reports.FindAsync(r => r.Date == date, ct)).FirstOrDefault();
-        // Reports cached before the hourly timeline fields existed hold empty
-        // arrays — regenerate them once from the still-available session rows.
-        if (existing is not null
-            && existing.HourlyFocusMinutesJson != "[]"
-            && existing.HourlyBreakMinutesJson != "[]") return existing;
+        // Always regenerate from the session rows — the stored report is only a
+        // cache, and the aggregation logic has changed over time (hourly timeline,
+        // no-task rollup). Regenerating keeps every viewed day self-healing.
         return await RegenerateDailyReportAsync(localDate, ct);
     }
 
@@ -71,28 +63,25 @@ public sealed class ReportingService : IReportingService
         var totalClicks = allActivities.Sum(a => a.MouseClickCount);
         var totalIdle = allActivities.Sum(a => a.IdleSeconds);
 
-        // Per-task breakdown
-        var taskGroups = focusSessions
-            .Where(s => s.TaskId.HasValue)
-            .GroupBy(s => s.TaskId!.Value)
-            .ToList();
-        var breakdown = new List<(Guid TaskId, int Secs, int Count)>();
-        foreach (var g in taskGroups)
+        // Per-task breakdown — sessions without a task roll up under "(no task)"
+        // (TaskId = Guid.Empty) so the chart totals match TotalFocusSeconds.
+        var breakdown = new List<(Guid TaskId, string Title, int Secs, int Count)>();
+        foreach (var g in focusSessions.GroupBy(s => s.TaskId))
         {
-            breakdown.Add((g.Key, g.Sum(s => s.ActualDurationSec > 0 ? s.ActualDurationSec : s.PlannedDurationSec), g.Count()));
-        }
-        var taskIds = breakdown.Select(b => b.TaskId).Distinct().ToList();
-        var taskLookup = new Dictionary<Guid, TaskItem>();
-        foreach (var tid in taskIds)
-        {
-            var t = await _tasks.GetByIdAsync(tid, ct);
-            if (t is not null) taskLookup[tid] = t;
+            var secs = g.Sum(s => s.ActualDurationSec > 0 ? s.ActualDurationSec : s.PlannedDurationSec);
+            if (g.Key is null)
+            {
+                breakdown.Add((Guid.Empty, "(no task)", secs, g.Count()));
+                continue;
+            }
+            var t = await _tasks.GetByIdAsync(g.Key.Value, ct);
+            breakdown.Add((g.Key.Value, t?.Title ?? "(deleted)", secs, g.Count()));
         }
 
         var breakdownDtos = breakdown.Select(b => new TaskBreakdownDto
         {
             TaskId = b.TaskId,
-            TaskTitle = taskLookup.TryGetValue(b.TaskId, out var t) ? t.Title : "(deleted)",
+            TaskTitle = b.Title,
             MinutesSpent = b.Secs / 60,
             SessionCount = b.Count,
         }).ToList();

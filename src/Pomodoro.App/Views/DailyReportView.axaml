@@ -88,6 +88,17 @@
           <lvc:PieChart Height="280" Series="{Binding TaskBreakdownSeries}" />
         </StackPanel>
       </Border>
+
+      <!-- Time per task (horizontal bars) -->
+      <Border Classes="Card">
+        <StackPanel Spacing="8">
+          <TextBlock Classes="H2" Text="Time per Task" />
+          <lvc:CartesianChart Height="260"
+                              Series="{Binding TaskActivitySeries}"
+                              XAxes="{Binding TaskActivityXAxes}"
+                              YAxes="{Binding TaskActivityYAxes}" />
+        </StackPanel>
+      </Border>
     </StackPanel>
   </ScrollViewer>
   </Grid>

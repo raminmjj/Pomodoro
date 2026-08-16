@@ -6,6 +6,7 @@
     <RootNamespace>Pomodoro.App</RootNamespace>
     <AssemblyName>Pomodoro</AssemblyName>
     <ApplicationManifest>app.manifest</ApplicationManifest>
+    <ApplicationIcon>app.ico</ApplicationIcon>
     <PublishAot Condition="'$(PublishAot)' == ''">false</PublishAot>
     <TrimMode Condition="'$(PublishAot)' == 'true'">full</TrimMode>
     <PublishReadyToRun Condition="'$(PublishAot)' == 'true'">true</PublishReadyToRun>

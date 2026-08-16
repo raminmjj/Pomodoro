@@ -13,7 +13,8 @@ namespace Pomodoro.Infrastructure.Autostart;
 public sealed class WindowsAutoStartService : IAutoStartService
 {
     private const string RunKey = @"Software\Microsoft\Windows\CurrentVersion\Run";
-    private const string AppName = "Pomodoro";
+    private const string AppName = "Shahsavar Pomodoro 2500";
+    private const string LegacyAppName = "Pomodoro"; // pre-rename value name
     private readonly ILogger<WindowsAutoStartService> _logger;
 
     public WindowsAutoStartService(ILogger<WindowsAutoStartService> logger) => _logger = logger;
@@ -42,6 +43,8 @@ public sealed class WindowsAutoStartService : IAutoStartService
             using var key = Registry.CurrentUser.CreateSubKey(RunKey);
             var exePath = Environment.ProcessPath ?? AppContext.BaseDirectory;
             key?.SetValue(AppName, $"\"{exePath}\" --minimized");
+            // remove the pre-rename entry so autostart doesn't fire twice
+            key?.DeleteValue(LegacyAppName, throwOnMissingValue: false);
             _logger.LogInformation("Autostart enabled: {Path}", exePath);
         }
         catch (Exception ex)
@@ -58,6 +61,7 @@ public sealed class WindowsAutoStartService : IAutoStartService
         {
             using var key = Registry.CurrentUser.OpenSubKey(RunKey, writable: true);
             key?.DeleteValue(AppName, throwOnMissingValue: false);
+            key?.DeleteValue(LegacyAppName, throwOnMissingValue: false);
             _logger.LogInformation("Autostart disabled");
         }
         catch (Exception ex)

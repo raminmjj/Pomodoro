@@ -11,7 +11,7 @@ namespace Pomodoro.Infrastructure.Autostart;
 /// </summary>
 public sealed class MacAutoStartService : IAutoStartService
 {
-    private const string Label = "com.pomodoro.app";
+    private const string Label = "com.shahsavar.pomodoro2500";
     private readonly ILogger<MacAutoStartService> _logger;
 
     public MacAutoStartService(ILogger<MacAutoStartService> logger) => _logger = logger;

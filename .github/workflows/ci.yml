@@ -36,13 +36,13 @@ jobs:
         include:
           - os: windows-latest
             rid: win-x64
-            artifact: Pomodoro-win-x64.zip
+            artifact: Shahsavar-Pomodoro-2500-win-x64.zip
           - os: macos-latest
             rid: osx-arm64
-            artifact: Pomodoro-osx-arm64.tar.gz
+            artifact: Shahsavar-Pomodoro-2500-osx-arm64.tar.gz
           - os: ubuntu-latest
             rid: linux-x64
-            artifact: Pomodoro-linux-x64.tar.gz
+            artifact: Shahsavar-Pomodoro-2500-linux-x64.tar.gz
     runs-on: ${{ matrix.os }}
     env:
       PUBLISH_DIR: src/Pomodoro.App/bin/Release/net10.0/${{ matrix.rid }}/publish

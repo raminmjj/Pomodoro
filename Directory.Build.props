@@ -8,9 +8,10 @@
     <GenerateDocumentationFile>false</GenerateDocumentationFile>
     <AvaloniaUseCompiledBindingsByDefault>true</AvaloniaUseCompiledBindingsByDefault>
     <NeutralLanguage>en</NeutralLanguage>
-    <Authors>Pomodoro Team</Authors>
-    <Company>Pomodoro</Company>
-    <Product>Pomodoro</Product>
+    <Authors>Shahsavar</Authors>
+    <Company>Shahsavar</Company>
+    <Product>Shahsavar Pomodoro 2500</Product>
+    <AssemblyTitle>Shahsavar Pomodoro 2500</AssemblyTitle>
     <Copyright>Copyright (c) 2026 Pomodoro</Copyright>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <PackageProjectUrl>https://github.com/pomodoro/pomodoro-app</PackageProjectUrl>

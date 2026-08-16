@@ -65,7 +65,7 @@ internal sealed class DesktopNotificationSink : INotificationSink
             uFlags = NIF_MESSAGE | NIF_ICON | NIF_INFO,
             uCallbackMessage = WM_APP,
             hIcon = LoadIconW(IntPtr.Zero, IDI_APPLICATION),
-            szTip = "Pomodoro",
+            szTip = "Shahsavar Pomodoro 2500",
             szInfo = body ?? string.Empty,
             szInfoTitle = title ?? string.Empty,
             dwInfoFlags = severity switch

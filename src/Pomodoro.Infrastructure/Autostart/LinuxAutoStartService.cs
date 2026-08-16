@@ -10,7 +10,7 @@ namespace Pomodoro.Infrastructure.Autostart;
 /// </summary>
 public sealed class LinuxAutoStartService : IAutoStartService
 {
-    private const string ServiceName = "pomodoro";
+    private const string ServiceName = "shahsavar-pomodoro-2500";
     private readonly ILogger<LinuxAutoStartService> _logger;
 
     public LinuxAutoStartService(ILogger<LinuxAutoStartService> logger) => _logger = logger;
@@ -43,7 +43,7 @@ public sealed class LinuxAutoStartService : IAutoStartService
                 Directory.CreateDirectory(dir);
                 var content = $"""
                     [Unit]
-                    Description=Pomodoro Productivity App
+                    Description=Shahsavar Pomodoro 2500
                     After=graphical-session.target
 
                     [Service]
@@ -68,7 +68,7 @@ public sealed class LinuxAutoStartService : IAutoStartService
             var desktop = $"""
                 [Desktop Entry]
                 Type=Application
-                Name=Pomodoro
+                Name=Shahsavar Pomodoro 2500
                 Comment=Cross-platform Pomodoro timer
                 Exec={exePath} --minimized
                 Icon=pomodoro

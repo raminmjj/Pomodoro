@@ -81,14 +81,14 @@ public sealed class TaskItemMapper : ISqliteMapper<TaskItem>
     }
 
     private static string SerializeSessionIds(List<Guid> ids) =>
-        JsonSerializer.Serialize(ids ?? new List<Guid>());
+        JsonSerializer.Serialize(ids ?? new List<Guid>(), PersistenceJsonContext.Default.ListGuid);
 
     private static List<Guid> ParseSessionIds(string json)
     {
         if (string.IsNullOrWhiteSpace(json)) return new List<Guid>();
         try
         {
-            return JsonSerializer.Deserialize<List<Guid>>(json) ?? new List<Guid>();
+            return JsonSerializer.Deserialize(json, PersistenceJsonContext.Default.ListGuid) ?? new List<Guid>();
         }
         catch
         {

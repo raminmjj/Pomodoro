@@ -121,15 +121,27 @@ public class MainViewTests
         return svc;
     }
 
+    private static ISoundPlayer CreateSoundPlayer()
+    {
+        var svc = Substitute.For<ISoundPlayer>();
+        svc.PlayAsync(Arg.Any<string>(), Arg.Any<float>(), Arg.Any<CancellationToken>())
+           .Returns(Task.CompletedTask);
+        svc.StopAsync(Arg.Any<CancellationToken>())
+           .Returns(Task.CompletedTask);
+        return svc;
+    }
+
     private static MainViewModel CreateMainViewModel(
         IPomodoroEngine? engine = null,
         INavigationService? nav = null,
-        ITaskService? tasks = null)
+        ITaskService? tasks = null,
+        ISettingsService? settings = null)
     {
         return new MainViewModel(
             engine ?? CreateIdleEngine(),
             nav ?? CreateNavigationService(),
-            tasks ?? CreateTaskService());
+            tasks ?? CreateTaskService(),
+            settings ?? CreateSettingsService());
     }
 
     // ──────────────────────────────────────────────
@@ -278,7 +290,7 @@ public class MainViewTests
     {
         var settings = CreateSettingsService();
         var autostart = CreateAutoStartService();
-        var vm = new SettingsViewModel(settings, autostart);
+        var vm = new SettingsViewModel(settings, autostart, CreateSoundPlayer());
 
         // Wait for LoadAsync (called in constructor)
         await Task.Delay(100);
@@ -321,7 +333,7 @@ public class MainViewTests
         var settings = CreateSettingsService();
         var autostart = CreateAutoStartService();
 
-        var vm = new SettingsViewModel(settings, autostart);
+        var vm = new SettingsViewModel(settings, autostart, CreateSoundPlayer());
 
         await Task.Delay(100);
         Dispatcher.UIThread.RunJobs();

@@ -23,8 +23,8 @@ public sealed class DailyReportMapper : ISqliteMapper<DailyReport>
             TaskBreakdownJson TEXT NOT NULL,
             HourlyKeystrokesJson TEXT NOT NULL,
             HourlyMouseClicksJson TEXT NOT NULL,
-            HourlyFocusMinutesJson TEXT NOT NULL,
-            HourlyBreakMinutesJson TEXT NOT NULL,
+            HourlyFocusMinutesJson TEXT NOT NULL DEFAULT '[]',
+            HourlyBreakMinutesJson TEXT NOT NULL DEFAULT '[]',
             GeneratedAt TEXT NOT NULL
         );
         """;
@@ -59,7 +59,7 @@ public sealed class DailyReportMapper : ISqliteMapper<DailyReport>
         {
             Id = Guid.Parse(r.GetString("Id")),
             Date = DateTime.Parse(r.GetString("Date"), CultureInfo.InvariantCulture,
-                DateTimeStyles.None),
+                DateTimeStyles.RoundtripKind),
             CompletedFocusSessions = r.GetInt32("CompletedFocusSessions"),
             TotalFocusSeconds = r.GetInt32("TotalFocusSeconds"),
             TotalBreakSeconds = r.GetInt32("TotalBreakSeconds"),

@@ -1,6 +1,5 @@
 using Microsoft.Data.Sqlite;
 using Microsoft.Extensions.Logging;
-using Pomodoro.Infrastructure.Persistence.Mappers;
 
 namespace Pomodoro.Infrastructure.Persistence;
 

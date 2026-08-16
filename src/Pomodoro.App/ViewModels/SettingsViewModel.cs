@@ -11,6 +11,7 @@ public sealed partial class SettingsViewModel : BaseViewModel
 {
     private readonly ISettingsService _settings;
     private readonly IAutoStartService _autostart;
+    private readonly ISoundPlayer _soundPlayer;
 
     [ObservableProperty] private int _focusMinutes = 25;
     [ObservableProperty] private int _shortBreakMinutes = 5;
@@ -25,10 +26,11 @@ public sealed partial class SettingsViewModel : BaseViewModel
 
     public string[] AvailableSounds { get; } = { "bell", "chime", "digital" };
 
-    public SettingsViewModel(ISettingsService settings, IAutoStartService autostart)
+    public SettingsViewModel(ISettingsService settings, IAutoStartService autostart, ISoundPlayer soundPlayer)
     {
         _settings = settings;
         _autostart = autostart;
+        _soundPlayer = soundPlayer;
         _ = LoadAsync();
     }
 
@@ -74,4 +76,13 @@ public sealed partial class SettingsViewModel : BaseViewModel
 
     [RelayCommand]
     private void Back() => ServiceLocator.GetRequiredService<INavigationService>().NavigateTo(AppView.Main);
+
+    [RelayCommand]
+    private async Task PreviewAlarmAsync()
+    {
+        await RunSafeAsync(async () =>
+        {
+            await _soundPlayer.PlayAsync(AlarmSoundName, (float)AlarmVolume);
+        });
+    }
 }

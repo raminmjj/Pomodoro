@@ -72,6 +72,9 @@
             <TextBlock Text="Alarm sound" VerticalAlignment="Center" />
             <ComboBox Grid.Column="1" ItemsSource="{Binding AvailableSounds}"
                       SelectedItem="{Binding AlarmSoundName}" />
+            <Button Grid.Column="2" Content="▶" Classes="Secondary"
+                    Command="{Binding PreviewAlarmCommand}"
+                    ToolTip.Tip="Preview alarm sound" />
           </Grid>
 
           <Grid ColumnDefinitions="200,*,Auto" Margin="0,4">

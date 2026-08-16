@@ -12,6 +12,9 @@ namespace Pomodoro.Infrastructure.Audio;
 ///  - SND_FILENAME: load from file path.
 ///  - SND_NODEFAULT: don't play the default beep if the file is missing.
 ///
+/// Volume is controlled via waveOutSetVolume on WAVE_MAPPER before playback
+/// and restored to its original level after playback finishes.
+///
 /// No external dependencies. Works on every Windows version since Windows 95.
 /// </summary>
 internal sealed class WindowsAudioBackend : IPlatformAudioBackend
@@ -21,12 +24,19 @@ internal sealed class WindowsAudioBackend : IPlatformAudioBackend
     private const uint SND_FILENAME = 0x00020000;
     private const uint SND_NODEFAULT = 0x00000002;
     private const uint SND_ASYNC = 0x00000001;
+    private const IntPtr WAVE_MAPPER = unchecked((IntPtr)(-1));
 
     [DllImport(WinMm, SetLastError = true, CharSet = CharSet.Unicode)]
     private static extern bool PlaySoundW(string pszSound, IntPtr hmod, uint fdwSound);
 
     [DllImport(WinMm, SetLastError = true)]
     private static extern bool PlaySoundW(IntPtr pszSound, IntPtr hmod, uint fdwSound);  // pass null to stop
+
+    [DllImport(WinMm, SetLastError = true)]
+    private static extern int waveOutSetVolume(IntPtr hwo, uint dwVolume);
+
+    [DllImport(WinMm, SetLastError = true)]
+    private static extern int waveOutGetVolume(IntPtr hwo, out uint pdwVolume);
 
     private CancellationTokenSource? _cts;
 
@@ -38,25 +48,40 @@ internal sealed class WindowsAudioBackend : IPlatformAudioBackend
         _cts = CancellationTokenSource.CreateLinkedTokenSource(ct);
 
         var token = _cts.Token;
-        // winmm doesn't support volume scaling directly. We pass through unchanged.
-        // Volume scaling would require using waveOutOpen + waveOutSetVolume — much more code.
-        // For now, accept volume=1.0 and document the limitation.
+        var clamped = Math.Clamp(volume, 0f, 1f);
 
         return Task.Run(() =>
         {
             try
             {
                 if (token.IsCancellationRequested) return;
-                // SND_ASYNC + a manual wait gives us cancellation semantics
-                PlaySoundW(wavPath, IntPtr.Zero, SND_FILENAME | SND_NODEFAULT | SND_ASYNC);
 
-                // Wait roughly the duration of the file so Stop has time to fire
-                // winmm doesn't give us a duration API, so we estimate from file size:
-                // WAV is ~176400 bytes/sec at 44.1kHz 16-bit stereo.
-                var fileInfo = new FileInfo(wavPath);
-                var approxDurationMs = fileInfo.Length / 176400.0 * 1000;
-                var waitMs = (int)Math.Min(approxDurationMs, 10_000);
-                token.WaitHandle.WaitOne(waitMs);
+                // Save current volume and apply the requested level.
+                // waveOutSetVolume uses a DWORD where low word = left channel,
+                // high word = right channel. We set both to the same value.
+                waveOutGetVolume(WAVE_MAPPER, out uint originalVolume);
+                var scaled = (uint)(clamped * 0xFFFF);
+                var stereoVolume = scaled | (scaled << 16);
+                waveOutSetVolume(WAVE_MAPPER, stereoVolume);
+
+                try
+                {
+                    // SND_ASYNC + a manual wait gives us cancellation semantics
+                    PlaySoundW(wavPath, IntPtr.Zero, SND_FILENAME | SND_NODEFAULT | SND_ASYNC);
+
+                    // Wait roughly the duration of the file so Stop has time to fire
+                    // winmm doesn't give us a duration API, so we estimate from file size:
+                    // WAV is ~176400 bytes/sec at 44.1kHz 16-bit stereo.
+                    var fileInfo = new FileInfo(wavPath);
+                    var approxDurationMs = fileInfo.Length / 176400.0 * 1000;
+                    var waitMs = (int)Math.Min(approxDurationMs, 10_000);
+                    token.WaitHandle.WaitOne(waitMs);
+                }
+                finally
+                {
+                    // Restore original volume even if cancelled or error
+                    waveOutSetVolume(WAVE_MAPPER, originalVolume);
+                }
             }
             catch (OperationCanceledException) { /* expected */ }
         }, token);

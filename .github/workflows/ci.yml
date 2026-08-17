@@ -34,15 +34,16 @@ jobs:
       fail-fast: false
       matrix:
         include:
+          # github.ref_name is the tag (e.g. v1.0.8) — publish only runs on tags
           - os: windows-latest
             rid: win-x64
-            artifact: Shahsavar-Pomodoro-2500-win-x64.zip
+            artifact: Shahsavar-Pomodoro-2500-win-x64-${{ github.ref_name }}.zip
           - os: macos-latest
             rid: osx-arm64
-            artifact: Shahsavar-Pomodoro-2500-osx-arm64.tar.gz
+            artifact: Shahsavar-Pomodoro-2500-osx-arm64-${{ github.ref_name }}.tar.gz
           - os: ubuntu-latest
             rid: linux-x64
-            artifact: Shahsavar-Pomodoro-2500-linux-x64.tar.gz
+            artifact: Shahsavar-Pomodoro-2500-linux-x64-${{ github.ref_name }}.tar.gz
     runs-on: ${{ matrix.os }}
     env:
       PUBLISH_DIR: src/Pomodoro.App/bin/Release/net10.0/${{ matrix.rid }}/publish

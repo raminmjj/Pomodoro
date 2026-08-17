@@ -37,8 +37,15 @@ internal sealed class App : Avalonia.Application
 
             // Wire notification sink — OS-level desktop notifications
             // (Windows toast, macOS Notification Center, Linux notify-send)
+            var notifSink = new DesktopNotificationSink(mainWindow);
+            notifSink.NotificationActivated += () =>
+            {
+                // Toast click callback fires on a COM thread — restore on the UI thread.
+                Avalonia.Threading.Dispatcher.UIThread.Post(mainWindow.RestoreFromTray);
+            };
+            
             var notifService = _services.GetRequiredService<AvaloniaNotificationService>();
-            notifService.Initialize(new DesktopNotificationSink(mainWindow));
+            notifService.Initialize(notifSink);
 
             if (_startMinimized)
             {

@@ -145,10 +145,8 @@ internal sealed class Program
             .UsePlatformDetect()
             .WithAppNotifications(new AppNotificationOptions
             {
-                // The COM activator is only needed for toast click callbacks,
-                // which this app doesn't use — and its registration NREs on
-                // some machines. Skip it; toasts still show normally.
-                DisableComServer = true,
+                // The COM activator is required for toast click callbacks:
+                // clicking a notification restores the window from the tray.
                 AppName = "Shahsavar Pomodoro 2500",
             })
             .LogToTrace();

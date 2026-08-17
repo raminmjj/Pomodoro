@@ -2,7 +2,7 @@
 [![CI/CD](https://github.com/pomodoro/pomodoro-app/actions/workflows/ci.yml/badge.svg)](https://github.com/pomodoro/pomodoro-app/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-A minimal, focused Pomodoro timer built with **.NET 10 + Avalonia 11.3 + LiteDB**.
+A minimal, focused Pomodoro timer built with **.NET 10 + Avalonia 11.3 + SQLite**.
 Compiles to native single-file binaries for **Windows**, **macOS**, and **Linux** via
 **NativeAOT** (no runtime dependency, fast startup, small binary).
 
@@ -12,6 +12,8 @@ Compiles to native single-file binaries for **Windows**, **macOS**, and **Linux*
 - Task management (CRUD)
 - Configurable Pomodoro/Break durations
 - Native system notifications + cross-platform alarm sound (zero external deps)
+- Clicking a notification restores the window (even when minimized to tray)
+- Minimize-to-tray: minimize button hides to the system tray with an Open/Exit menu
 - Activity tracking during breaks (keyboard + mouse) via SharpHook
 - Idle/over-activity alerts with cooldown
 - Beautiful daily report with LiveChartsCore (KPI cards, pie chart, hourly activity)

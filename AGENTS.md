@@ -2,7 +2,7 @@
 
 ## Overview
 
-Minimal Pomodoro timer desktop app built with **.NET 10 + Avalonia 11.3 + LiteDB**.
+Minimal Pomodoro timer desktop app built with **.NET 10 + Avalonia 11.3 + SQLite**.
 Compiles to native single-file binaries via **NativeAOT** for Windows, macOS, and Linux.
 
 ## Solution Structure
@@ -50,7 +50,7 @@ dotnet publish src/Pomodoro.App -c Release -r linux-x64 /p:PublishAot=true
 |---------|---------|-------|
 | UI | Avalonia 11.3.20 | Fluent theme, compiled bindings disabled by default |
 | MVVM | CommunityToolkit.Mvvm 8.4.2 | Source generators, AOT-safe |
-| Database | LiteDB 5.0.21 | Embedded NoSQL, explicit BsonMapper |
+| Database | SQLite (via Microsoft.Data.Sqlite) | Embedded relational, AOT-friendly |
 | Activity Tracking | SharpHook 7.1.3 | P/Invoke, AOT-friendly |
 | Charts | LiveChartsCore 2.0.5 | SkiaSharp Avalonia bindings |
 | Logging | Serilog 4.4.0 | File + Console sinks |
@@ -75,8 +75,10 @@ Package versions are centrally managed in `Directory.Packages.props`. Never add 
 - **Audio**: Pure P/Invoke implementation (`CrossPlatformSoundPlayer`). Uses `winmm.dll` on Windows, `afplay` on macOS, `paplay`/`aplay` on Linux. No NAudio.
 - **Autostart**: Platform-specific implementations selected via `AutoStartServiceFactory` (Registry on Windows, LaunchAgent on macOS, systemd --user on Linux).
 - **Activity tracking**: SharpHook uses P/Invoke. `NullActivityTracker` exists as a fallback.
+- **Database**: SQLite via `Microsoft.Data.Sqlite`. Schema managed by `SqliteDbContext` with idempotent migrations.
 - **Data directory**: `%LOCALAPPDATA%/Pomodoro/` on Windows, equivalent on other platforms. DB file: `pomodoro.db`.
 - **Sounds**: Bundled WAV files in `Assets/Sounds/` (bell.wav, chime.wav, digital.wav), copied to output.
+- **Notifications**: `Avalonia.Labs.Notifications` for OS-level toasts. `DesktopNotificationSink` handles click-to-restore via `NotificationCompleted` event (`e.IsActivated`). Works even when app is minimized to tray.
 
 ## Avalonia-Specific Notes
 

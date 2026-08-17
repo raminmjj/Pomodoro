@@ -22,10 +22,35 @@ internal sealed class DesktopNotificationSink : INotificationSink
     private readonly Bitmap? _icon;
     private WindowNotificationManager? _fallback;
 
+    /// <summary>
+    /// Raised when the user clicks on a desktop notification.
+    /// </summary>
+    public event Action? NotificationActivated;
+
     public DesktopNotificationSink(Window window)
     {
         _window = window;
         _icon = LoadIcon();
+        
+        // Subscribe to notification completed event to detect user clicks
+        try
+        {
+            var manager = Avalonia.Labs.Notifications.NativeNotificationManager.Current;
+            if (manager != null)
+            {
+                manager.NotificationCompleted += (_, e) =>
+                {
+                    if (e.IsActivated)
+                    {
+                        NotificationActivated?.Invoke();
+                    }
+                };
+            }
+        }
+        catch
+        {
+            // Ignore - native notifications not available
+        }
     }
 
     private static Bitmap? LoadIcon()

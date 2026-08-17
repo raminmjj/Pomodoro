@@ -60,11 +60,15 @@ public sealed partial class MainWindow : Window
         _trayIcon.IsVisible = true;
     }
 
-    private void RestoreFromTray()
+    public void RestoreFromTray()
     {
         WindowState = _restoreState;
         Show();
         Activate();
+
+        // Force foreground on Windows if Activate() didn't take.
+        Topmost = true;
+        Topmost = false;
     }
 
     protected override void OnClosed(EventArgs e)

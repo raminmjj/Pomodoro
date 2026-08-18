@@ -14,14 +14,18 @@ env:
 jobs:
   test:
     runs-on: ubuntu-latest
+
     steps:
       - uses: actions/checkout@v4
+
       - uses: actions/setup-dotnet@v4
         with:
           dotnet-version: ${{ env.DOTNET_VERSION }}
+
       - run: dotnet restore
       - run: dotnet build --no-restore -c Release
       - run: dotnet test --no-build -c Release --collect:"XPlat Code Coverage" --logger trx
+
       - uses: codecov/codecov-action@v5
         with:
           files: '**/coverage.cobertura.xml'
@@ -30,25 +34,55 @@ jobs:
   publish:
     needs: test
     if: startsWith(github.ref, 'refs/tags/v')
+
     strategy:
       fail-fast: false
       matrix:
         include:
-          # github.ref_name is the tag (e.g. v1.0.8) — publish only runs on tags
-          - os: windows-latest
+          - name: Windows x64
+            os: windows-latest
             rid: win-x64
             artifact: Shahsavar-Pomodoro-2500-win-x64-${{ github.ref_name }}.zip
-          - os: macos-latest
+
+          - name: macOS ARM64
+            os: macos-latest
             rid: osx-arm64
             artifact: Shahsavar-Pomodoro-2500-osx-arm64-${{ github.ref_name }}.tar.gz
-          - os: ubuntu-latest
+
+          - name: Linux x64
+            os: ubuntu-latest
             rid: linux-x64
+            container: ubuntu:20.04
             artifact: Shahsavar-Pomodoro-2500-linux-x64-${{ github.ref_name }}.tar.gz
+
+    name: Publish ${{ matrix.name }}
     runs-on: ${{ matrix.os }}
+    container: ${{ matrix.container || '' }}
+
     env:
       PUBLISH_DIR: src/Pomodoro.App/bin/Release/net10.0/${{ matrix.rid }}/publish
+
     steps:
+      - name: Install Linux dependencies
+        if: startsWith(matrix.rid, 'linux-')
+        shell: bash
+        run: |
+          export DEBIAN_FRONTEND=noninteractive
+
+          apt-get update
+
+          apt-get install -y \
+            curl \
+            wget \
+            git \
+            unzip \
+            zip \
+            libicu66 \
+            tzdata \
+            clang
+
       - uses: actions/checkout@v4
+
       - uses: actions/setup-dotnet@v4
         with:
           dotnet-version: ${{ env.DOTNET_VERSION }}
@@ -61,13 +95,22 @@ jobs:
           -r ${{ matrix.rid }}
           -p:PublishAot=true
 
+      - name: Verify GLIBC requirements
+        if: startsWith(matrix.rid, 'linux-')
+        shell: bash
+        run: |
+          echo "GLIBC requirements:"
+          strings "$PUBLISH_DIR/Pomodoro" \
+            | grep -o 'GLIBC_[0-9.]*' \
+            | sort -Vu
+
       - name: Package (Windows)
-        if: matrix.os == 'windows-latest'
+        if: matrix.rid == 'win-x64'
         shell: pwsh
         run: Compress-Archive -Path $env:PUBLISH_DIR/* -DestinationPath ${{ matrix.artifact }}
 
       - name: Package (Unix)
-        if: matrix.os != 'windows-latest'
+        if: startsWith(matrix.rid, 'linux-') || startsWith(matrix.rid, 'osx-')
         shell: bash
         run: tar -czf ${{ matrix.artifact }} -C "$PUBLISH_DIR" .
 
@@ -81,14 +124,15 @@ jobs:
   release:
     needs: publish
     runs-on: ubuntu-latest
+
     permissions:
       contents: write
+
     steps:
-      # download-artifact puts each artifact in its own subdirectory;
-      # merge-multiple flattens them so the release globs below can match.
       - uses: actions/download-artifact@v4
         with:
           merge-multiple: true
+
       - uses: softprops/action-gh-release@v2
         with:
           generate_release_notes: true

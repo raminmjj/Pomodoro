@@ -197,7 +197,7 @@ internal sealed class Program
     private static string GetAppDataDirectory()
     {
         var baseDir = AppContext.BaseDirectory;
-        var dir = Path.Combine(baseDir, "Pomodoro");
+        var dir = Path.Combine(baseDir, "PomodoroData");
         if (!Directory.Exists(dir)) Directory.CreateDirectory(dir);
         return dir;
     }

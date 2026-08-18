@@ -32,15 +32,15 @@ if [[ ! -f "appimagetool" ]]; then
     chmod +x appimagetool
 fi
 
-rm -f SourceGit/*.dbg
-rm -f SourceGit/*.pdb
+rm -f Pomodoro/*.dbg
+rm -f Pomodoro/*.pdb
 
 # --- AppImage ---
 mkdir -p Pomodoro.AppDir/opt
 mkdir -p Pomodoro.AppDir/usr/share/metainfo
 mkdir -p Pomodoro.AppDir/usr/share/applications
 
-cp -r SourceGit Pomodoro.AppDir/opt/pomodoro
+cp -r Pomodoro Pomodoro.AppDir/opt/pomodoro
 desktop-file-install resources/_common/applications/pomodoro.desktop --dir Pomodoro.AppDir/usr/share/applications \
     --set-icon com.pomodoro.Pomodoro --set-key=Exec --set-value=AppRun
 mv Pomodoro.AppDir/usr/share/applications/{pomodoro,com.pomodoro.Pomodoro}.desktop
@@ -56,7 +56,7 @@ mkdir -p resources/deb/opt/pomodoro/
 mkdir -p resources/deb/usr/bin
 mkdir -p resources/deb/usr/share/applications
 mkdir -p resources/deb/usr/share/icons
-cp -f SourceGit/* resources/deb/opt/pomodoro
+cp -f Pomodoro/* resources/deb/opt/pomodoro
 ln -rsf resources/deb/opt/pomodoro/pomodoro resources/deb/usr/bin
 cp -r resources/_common/applications resources/deb/usr/share
 cp -r resources/_common/icons resources/deb/usr/share

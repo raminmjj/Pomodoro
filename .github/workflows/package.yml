@@ -20,7 +20,7 @@ jobs:
         uses: actions/download-artifact@v8
         with:
           name: pomodoro.${{ matrix.runtime }}
-          path: build/SourceGit
+          path: build/Pomodoro
       - name: Package
         shell: pwsh
         env:
@@ -55,8 +55,9 @@ jobs:
           VERSION: ${{ inputs.version }}
           RUNTIME: ${{ matrix.runtime }}
         run: |
-          mkdir build/SourceGit
-          tar -xf "build/pomodoro.${{ matrix.runtime }}.tar" -C build/SourceGit
+          mkdir build/Pomodoro
+          tar -xf "build/pomodoro.${{ matrix.runtime }}.tar" -C build/Pomodoro
+          chmod +x ./build/scripts/package.osx-app.sh
           ./build/scripts/package.osx-app.sh
       - name: Upload package artifact
         uses: actions/upload-artifact@v7
@@ -94,8 +95,9 @@ jobs:
           RUNTIME: ${{ matrix.runtime }}
           APPIMAGE_EXTRACT_AND_RUN: 1
         run: |
-          mkdir build/SourceGit
-          tar -xf "build/pomodoro.${{ matrix.runtime }}.tar" -C build/SourceGit
+          mkdir build/Pomodoro
+          tar -xf "build/pomodoro.${{ matrix.runtime }}.tar" -C build/Pomodoro
+          chmod +x ./build/scripts/package.linux.sh
           ./build/scripts/package.linux.sh
       - name: Upload package artifacts
         uses: actions/upload-artifact@v7

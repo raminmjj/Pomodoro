@@ -1,0 +1,13 @@
+Package: pomodoro
+Version: @VERSION@
+Architecture: @ARCH@
+Maintainer: Ramin Alirezaee
+Description: A minimal, focused Pomodoro timer
+ A cross-platform Pomodoro timer built with .NET and Avalonia UI.
+ Features task management, configurable durations, native notifications,
+ activity tracking during breaks, and beautiful daily reports.
+Depends: libc6, libstdc++6, @ICU_DEPS@
+Installed-Size: @INSTALLED_SIZE@
+Section: utils
+Priority: optional
+Homepage: https://github.com/pomodoro/pomodoro-app

@@ -1,0 +1,11 @@
+[Desktop Entry]
+Type=Application
+Name=Pomodoro
+GenericName=Pomodoro Timer
+Comment=A minimal, focused Pomodoro timer
+Exec=pomodoro
+Icon=com.pomodoro.Pomodoro
+Terminal=false
+Categories=Utility;Clock;
+Keywords=pomodoro;timer;focus;productivity;
+StartupNotify=true

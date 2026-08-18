@@ -1,142 +1,57 @@
-name: CI/CD
-
+name: Continuous Integration
 on:
   push:
-    branches: [master, main, develop]
-    tags: ['v*']
+    branches: [master]
   pull_request:
-    branches: [master, main]
-
-env:
-  DOTNET_VERSION: '10.0.x'
-  DOTNET_ROLL_FORWARD: 'Major'
-
+    branches: [master]
+  workflow_dispatch:
 jobs:
   test:
+    name: Test
     runs-on: ubuntu-latest
-
     steps:
-      - uses: actions/checkout@v4
-
-      - uses: actions/setup-dotnet@v4
+      - name: Checkout sources
+        uses: actions/checkout@v6
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v5
         with:
-          dotnet-version: ${{ env.DOTNET_VERSION }}
-
-      - run: dotnet restore
-      - run: dotnet build --no-restore -c Release
-      - run: dotnet test --no-build -c Release --collect:"XPlat Code Coverage" --logger trx
-
-      - uses: codecov/codecov-action@v5
+          dotnet-version: 10.0.x
+      - name: Restore
+        run: dotnet restore
+      - name: Build
+        run: dotnet build --no-restore -c Release
+      - name: Test
+        run: dotnet test --no-build -c Release --collect:"XPlat Code Coverage" --logger trx
+      - name: Upload coverage
+        uses: codecov/codecov-action@v5
         with:
           files: '**/coverage.cobertura.xml'
           fail_ci_if_error: false
-
-  publish:
+  build:
+    name: Build
     needs: test
-    if: startsWith(github.ref, 'refs/tags/v')
-
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - name: Windows x64
-            os: windows-latest
-            rid: win-x64
-            artifact: Shahsavar-Pomodoro-2500-win-x64-${{ github.ref_name }}.zip
-
-          - name: macOS ARM64
-            os: macos-latest
-            rid: osx-arm64
-            artifact: Shahsavar-Pomodoro-2500-osx-arm64-${{ github.ref_name }}.tar.gz
-
-          - name: Linux x64
-            os: ubuntu-latest
-            rid: linux-x64
-            container: ubuntu:20.04
-            artifact: Shahsavar-Pomodoro-2500-linux-x64-${{ github.ref_name }}.tar.gz
-
-    name: Publish ${{ matrix.name }}
-    runs-on: ${{ matrix.os }}
-    container: ${{ matrix.container || '' }}
-
-    env:
-      PUBLISH_DIR: src/Pomodoro.App/bin/Release/net10.0/${{ matrix.rid }}/publish
-
-    steps:
-      - name: Install Linux dependencies
-        if: startsWith(matrix.rid, 'linux-')
-        shell: bash
-        run: |
-          export DEBIAN_FRONTEND=noninteractive
-
-          apt-get update
-
-          apt-get install -y \
-            curl \
-            wget \
-            git \
-            unzip \
-            zip \
-            libicu66 \
-            tzdata \
-            clang
-
-      - uses: actions/checkout@v4
-
-      - uses: actions/setup-dotnet@v4
-        with:
-          dotnet-version: ${{ env.DOTNET_VERSION }}
-
-      - name: Publish (AOT)
-        shell: bash
-        run: >
-          dotnet publish src/Pomodoro.App/Pomodoro.App.csproj
-          -c Release
-          -r ${{ matrix.rid }}
-          -p:PublishAot=true
-
-      - name: Verify GLIBC requirements
-        if: startsWith(matrix.rid, 'linux-')
-        shell: bash
-        run: |
-          echo "GLIBC requirements:"
-          strings "$PUBLISH_DIR/Pomodoro" \
-            | grep -o 'GLIBC_[0-9.]*' \
-            | sort -Vu
-
-      - name: Package (Windows)
-        if: matrix.rid == 'win-x64'
-        shell: pwsh
-        run: Compress-Archive -Path $env:PUBLISH_DIR/* -DestinationPath ${{ matrix.artifact }}
-
-      - name: Package (Unix)
-        if: startsWith(matrix.rid, 'linux-') || startsWith(matrix.rid, 'osx-')
-        shell: bash
-        run: tar -czf ${{ matrix.artifact }} -C "$PUBLISH_DIR" .
-
-      - name: Upload artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: ${{ matrix.artifact }}
-          path: ${{ matrix.artifact }}
-          if-no-files-found: error
-
-  release:
-    needs: publish
+    uses: ./.github/workflows/build.yml
+  version:
+    name: Prepare version string
     runs-on: ubuntu-latest
-
-    permissions:
-      contents: write
-
+    outputs:
+      version: ${{ steps.version.outputs.version }}
     steps:
-      - uses: actions/download-artifact@v4
-        with:
-          merge-multiple: true
-
-      - uses: softprops/action-gh-release@v2
-        with:
-          generate_release_notes: true
-          fail_on_unmatched_files: true
-          files: |
-            *.zip
-            *.tar.gz
+      - name: Checkout sources
+        uses: actions/checkout@v6
+      - name: Output version string
+        id: version
+        env:
+          TAG: ${{ github.ref_name }}
+        run: |
+          if [[ "$TAG" == v* ]]; then
+            echo "version=${TAG#v}" >> "$GITHUB_OUTPUT"
+          else
+            echo "version=0.0.0-dev" >> "$GITHUB_OUTPUT"
+          fi
+  package:
+    needs: [build, version]
+    name: Package
+    uses: ./.github/workflows/package.yml
+    with:
+      version: ${{ needs.version.outputs.version }}

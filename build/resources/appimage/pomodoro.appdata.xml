@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<component type="desktop-application">
+  <id>com.pomodoro.Pomodoro</id>
+  <metadata_license>MIT</metadata_license>
+  <project_license>MIT</project_license>
+  <name>Pomodoro</name>
+  <summary>A minimal, focused Pomodoro timer</summary>
+  <description>
+    <p>
+      A cross-platform Pomodoro timer built with .NET and Avalonia UI.
+      Features task management, configurable durations, native notifications,
+      activity tracking during breaks, and beautiful daily reports.
+    </p>
+  </description>
+  <url type="homepage">https://github.com/pomodoro/pomodoro-app</url>
+  <url type="bugtracker">https://github.com/pomodoro/pomodoro-app/issues</url>
+  <launchable type="desktop-id">com.pomodoro.Pomodoro.desktop</launchable>
+  <provides>
+    <binary>pomodoro</binary>
+  </provides>
+  <categories>
+    <category>Utility</category>
+    <category>Clock</category>
+  </categories>
+  <content_rating type="oars-1.1"/>
+</component>

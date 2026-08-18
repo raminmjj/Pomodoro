@@ -21,9 +21,14 @@ mkdir -p %{buildroot}/usr/share/applications
 mkdir -p %{buildroot}/usr/share/icons/hicolor/256x256/apps
 
 cp -r %{_builddir}/Pomodoro/* %{buildroot}/opt/pomodoro/
+
 ln -sf /opt/pomodoro/pomodoro %{buildroot}/usr/bin/pomodoro
-cp %{_builddir}/../resources/_common/applications/pomodoro.desktop %{buildroot}/usr/share/applications/com.pomodoro.Pomodoro.desktop
-cp %{_builddir}/../resources/_common/icons/pomodoro.png %{buildroot}/usr/share/icons/hicolor/256x256/apps/com.pomodoro.Pomodoro.png
+
+cp %{_builddir}/_common/applications/pomodoro.desktop \
+   %{buildroot}/usr/share/applications/com.pomodoro.Pomodoro.desktop
+
+cp %{_builddir}/_common/icons/pomodoro.png \
+   %{buildroot}/usr/share/icons/hicolor/256x256/apps/com.pomodoro.Pomodoro.png
 
 %files
 /opt/pomodoro/*

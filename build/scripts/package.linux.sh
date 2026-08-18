@@ -77,5 +77,9 @@ sed -i -e "s/^Version:.*/Version: $VERSION/" \
 dpkg-deb -Zgzip --root-owner-group --build resources/deb "pomodoro_${VERSION}-1_${arch}.deb"
 
 # --- RPM ---
+# Prepare RPM build directory with the built binaries
+mkdir -p resources/rpm/BUILD/Pomodoro
+cp -r Pomodoro/* resources/rpm/BUILD/Pomodoro/
+
 rpmbuild -bb --target="$target" resources/rpm/SPECS/build.spec --define "_topdir $(pwd)/resources/rpm" --define "_version $VERSION"
 mv "resources/rpm/RPMS/$target/pomodoro-$VERSION-1.$target.rpm" ./

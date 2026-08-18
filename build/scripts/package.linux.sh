@@ -81,5 +81,9 @@ dpkg-deb -Zgzip --root-owner-group --build resources/deb "pomodoro_${VERSION}-1_
 mkdir -p resources/rpm/BUILD/Pomodoro
 cp -r Pomodoro/* resources/rpm/BUILD/Pomodoro/
 
+# Copy resources needed by the spec file
+cp -r resources/_common resources/rpm/BUILD/
+cp -r resources/appimage resources/rpm/BUILD/
+
 rpmbuild -bb --target="$target" resources/rpm/SPECS/build.spec --define "_topdir $(pwd)/resources/rpm" --define "_version $VERSION"
 mv "resources/rpm/RPMS/$target/pomodoro-$VERSION-1.$target.rpm" ./

@@ -26,10 +26,10 @@ Compiles to native single-file binaries for **Windows**, **macOS**, and **Linux*
 | ------------------ | -------------------------------- | -------------------------------------- |
 | UI Framework       | Avalonia 11.3.20                 | Latest stable                         |
 | MVVM               | CommunityToolkit.Mvvm 8.4.2      | Source-generator based, AOT-safe       |
-| Database           | LiteDB 5.0.21                    | Embedded NoSQL, explicit BsonMapper    |
+| Database           | Microsoft.Data.Sqlite 10.0.11    | Embedded SQLite, AOT-safe (replaced LiteDB) |
 | Activity Tracking  | SharpHook 7.1.3                  | P/Invoke wrapper, AOT-friendly         |
-| Charts             | LiveChartsCore 2.0.5             | Stable release, Avalonia bindings      |
-| Notifications      | Avalonia.WindowNotificationManager | Cross-platform native                |
+| Charts             | LiveChartsCore 2.0.5             | SkiaSharp-backed, Avalonia bindings    |
+| Notifications      | Avalonia.Labs.Notifications 11.3.1 | Cross-platform native notifications  |
 | Audio Playback     | Pure P/Invoke (no external deps) | winmm.dll / afplay / paplay-aplay     |
 | Logging            | Serilog 4.4.0                    | File + console sinks                   |
 | DI / Host          | Microsoft.Extensions 10.0.11     | Explicit registration (no assembly scan) |
@@ -58,7 +58,7 @@ Pomodoro/
 │   │   ├── Engines/
 │   │   ├── Services/
 │   │   └── DTOs/
-│   ├── Pomodoro.Infrastructure/       # LiteDB, SharpHook, Audio, Autostart
+│   ├── Pomodoro.Infrastructure/       # SQLite, SharpHook, Audio, Autostart
 │   │   ├── Persistence/
 │   │   ├── Hooks/
 │   │   ├── Notifications/
@@ -75,7 +75,7 @@ Pomodoro/
 └── tests/
     ├── Pomodoro.Domain.Tests/         # 6 tests
     ├── Pomodoro.Application.Tests/    # 23 tests
-    └── Pomodoro.Infrastructure.Tests/ # 5 integration tests (real LiteDB)
+    └── Pomodoro.Infrastructure.Tests/ # 5 integration tests (real SQLite)
 ```
 
 ## Build & Run
@@ -119,7 +119,7 @@ App  →  Application  →  Domain
 
 - **Domain**: pure entities, enums, interfaces. Zero external dependencies.
 - **Application**: engines, services, DTOs. Depends only on Domain.
-- **Infrastructure**: LiteDB, SharpHook, audio, autostart. Implements Domain interfaces.
+- **Infrastructure**: SQLite (Microsoft.Data.Sqlite), SharpHook, audio, autostart. Implements Domain interfaces.
 - **App**: Avalonia views, viewmodels, DI registration.
 
 All async work is `CancellationToken`-aware. The Pomodoro state machine
@@ -130,8 +130,8 @@ is a singleton — only one cycle can run at a time.
 - **Domain.Tests** (6): Entity defaults, IsActive logic.
 - **Application.Tests** (23): Engine state transitions, TaskService CRUD,
   SettingsService defaults/persistence, ActivityAlertEvaluator cooldown.
-- **Infrastructure.Tests** (5): LiteDB round-trip for all 5 entity types
-  with the AOT-safe BsonMapper, including unique-index enforcement.
+- **Infrastructure.Tests** (5): SQLite round-trip for all 5 entity types,
+  including unique-index enforcement.
 
 ## License
 

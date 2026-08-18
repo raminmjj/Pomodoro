@@ -56,7 +56,7 @@ mkdir -p resources/deb/opt/pomodoro/
 mkdir -p resources/deb/usr/bin
 mkdir -p resources/deb/usr/share/applications
 mkdir -p resources/deb/usr/share/icons
-cp -f Pomodoro/* resources/deb/opt/pomodoro
+cp -rf Pomodoro/* resources/deb/opt/pomodoro
 ln -rsf resources/deb/opt/pomodoro/pomodoro resources/deb/usr/bin
 cp -r resources/_common/applications resources/deb/usr/share
 cp -r resources/_common/icons resources/deb/usr/share

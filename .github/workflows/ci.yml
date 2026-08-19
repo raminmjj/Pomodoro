@@ -36,6 +36,8 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       version: ${{ steps.version.outputs.version }}
+      debian_version: ${{ steps.version.outputs.debian_version }}
+      product_version: ${{ steps.version.outputs.product_version }}
     steps:
       - name: Checkout sources
         uses: actions/checkout@v6
@@ -44,11 +46,28 @@ jobs:
         env:
           TAG: ${{ github.ref_name }}
         run: |
+          # determine base canonical version (from tag or fallback)
           if [[ "$TAG" == v* ]]; then
-            echo "version=${TAG#v}" >> "$GITHUB_OUTPUT"
+            CANONICAL="${TAG#v}"
           else
-            echo "version=0.0.0-dev" >> "$GITHUB_OUTPUT"
+            CANONICAL="0.0.0-dev"
           fi
+
+          # debian: replace '-' with '~'
+          DEBIAN_VERSION="${CANONICAL//-/~}"
+
+          # product_version for Windows: keep up to 4 numeric parts, fill with zeros
+          # extract numeric parts from canonical (non-numeric parts become zeros)
+          # Example: 1.2.3-dev -> 1.2.3.0 ; 0.0.0-dev -> 0.0.0.0
+          NUMS=$(echo "$CANONICAL" | sed -E 's/^([0-9]+(\.[0-9]+){0,3}).*$/\1/;s/\.$//')
+          IFS='.' read -r -a parts <<< "$NUMS"
+          p0=${parts[0]:-0}; p1=${parts[1]:-0}; p2=${parts[2]:-0}; p3=${parts[3]:-0}
+          PRODUCT_VERSION="$p0.$p1.$p2.$p3"
+
+          # export outputs for the workflow
+          echo "version=$CANONICAL" >> "$GITHUB_OUTPUT"
+          echo "debian_version=$DEBIAN_VERSION" >> "$GITHUB_OUTPUT"
+          echo "product_version=$PRODUCT_VERSION" >> "$GITHUB_OUTPUT"
   package:
     needs: [build, version]
     name: Package

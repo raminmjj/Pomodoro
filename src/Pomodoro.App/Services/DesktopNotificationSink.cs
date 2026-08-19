@@ -129,19 +129,26 @@ internal sealed class DesktopNotificationSink : INotificationSink
 
     private void ShowFallback(string title, string body, NotificationSeverity severity)
     {
-        _fallback ??= new WindowNotificationManager(_window)
+        try
         {
-            Position = NotificationPosition.BottomRight,
-            MaxItems = 3,
-        };
+            _fallback ??= new WindowNotificationManager(_window)
+            {
+                Position = NotificationPosition.BottomRight,
+                MaxItems = 3,
+            };
 
-        var type = severity switch
+            var type = severity switch
+            {
+                NotificationSeverity.Success => NotificationType.Success,
+                NotificationSeverity.Warning => NotificationType.Warning,
+                NotificationSeverity.Error => NotificationType.Error,
+                _ => NotificationType.Information,
+            };
+            _fallback.Show(new Notification(title, body, type));
+        }
+        catch
         {
-            NotificationSeverity.Success => NotificationType.Success,
-            NotificationSeverity.Warning => NotificationType.Warning,
-            NotificationSeverity.Error => NotificationType.Error,
-            _ => NotificationType.Information,
-        };
-        _fallback.Show(new Notification(title, body, type));
+            // In-app toast failed — nothing more we can do.
+        }
     }
 }

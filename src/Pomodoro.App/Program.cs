@@ -87,6 +87,16 @@ internal sealed class Program
         Log.Information("Shutdown: cancellation signalled");
 
         // Dispose services synchronously (stops hooks, flushes channels, closes DB)
+        // The notification COM server must be released before the host teardown —
+        // otherwise MicroCom's CCW release races with the dispatcher shutdown and
+        // throws NullReferenceException in Release(Ccw*).
+        try
+        {
+            if (Avalonia.Labs.Notifications.NativeNotificationManager.Current is IDisposable notifDisp)
+                notifDisp.Dispose();
+        }
+        catch (Exception ex) { Log.Warning(ex, "Notification manager disposal failed"); }
+
         try
         {
             if (host is IAsyncDisposable asyncHost)

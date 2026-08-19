@@ -250,10 +250,18 @@ public sealed class PomodoroEngine : IPomodoroEngine
         session.ActualDurationSec = session.PlannedDurationSec;
         await _sessionRepo.UpsertAsync(session, ct);
 
-        // Play alarm + notification
-        var soundName = await _settings.GetAlarmSoundNameAsync(ct);
-        var volume = await _settings.GetAlarmVolumeAsync(ct);
-        await _sound.PlayAsync(soundName, volume, ct);
+        // Play alarm + notification (non-fatal — failures must not block
+        // the phase transition, otherwise the engine gets stuck).
+        try
+        {
+            var soundName = await _settings.GetAlarmSoundNameAsync(ct);
+            var volume = await _settings.GetAlarmVolumeAsync(ct);
+            await _sound.PlayAsync(soundName, volume, ct);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Failed to play alarm sound");
+        }
 
         await TransitionAfterPhaseAsync(session, wasCompleted: true, ct);
     }
@@ -294,8 +302,9 @@ public sealed class PomodoroEngine : IPomodoroEngine
                 CurrentPhase = SessionPhase.BreakRunning;
             }
 
-            // Start activity tracking during break
-            await _activityTracker.StartTrackingAsync(breakSession.Id, ct);
+            // Start activity tracking during break (non-fatal)
+            try { await _activityTracker.StartTrackingAsync(breakSession.Id, ct); }
+            catch (Exception ex) { _logger.LogWarning(ex, "Failed to start activity tracking for break"); }
 
             await _notifications.ShowBreakStartAsync((int)breakDuration.TotalMinutes, isLongBreak, ct);
             RaiseStateChanged();
@@ -304,7 +313,8 @@ public sealed class PomodoroEngine : IPomodoroEngine
         // Break completed → back to focus (auto-start if configured) or idle
         else if (completed.Phase == SessionPhase.BreakRunning)
         {
-            await _activityTracker.StopTrackingAsync(ct);
+            try { await _activityTracker.StopTrackingAsync(ct); }
+            catch (Exception ex) { _logger.LogWarning(ex, "Failed to stop activity tracking"); }
 
             lock (_stateLock)
             {
@@ -319,7 +329,14 @@ public sealed class PomodoroEngine : IPomodoroEngine
             var autoStart = await _settings.GetAutoStartBreakAsync(ct);
             if (autoStart)
             {
-                await StartFocusAsync(completed.TaskId, ct);
+                try
+                {
+                    await StartFocusAsync(completed.TaskId, ct);
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "Auto-start of focus session failed after break completion — engine remains idle");
+                }
             }
         }
         else

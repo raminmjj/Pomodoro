@@ -62,13 +62,22 @@ public sealed partial class MainWindow : Window
 
     public void RestoreFromTray()
     {
-        WindowState = _restoreState;
-        Show();
-        Activate();
+        try
+        {
+            WindowState = _restoreState;
+            Show();
+            Activate();
 
-        // Force foreground on Windows if Activate() didn't take.
-        Topmost = true;
-        Topmost = false;
+            // Force foreground on Windows if Activate() didn't take.
+            Topmost = true;
+            Topmost = false;
+        }
+        catch
+        {
+            // Swallow — restore can fail if the window is disposed or the
+            // COM thread doesn't have access. The user can still open the
+            // app from the tray icon.
+        }
     }
 
     protected override void OnClosed(EventArgs e)

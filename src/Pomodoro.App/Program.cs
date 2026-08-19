@@ -153,14 +153,18 @@ internal sealed class Program
             .UsePlatformDetect()
             .LogToTrace();
 
-        builder = builder.WithAppNotifications(new AppNotificationOptions
+        if (!OperatingSystem.IsLinux())
+        {
+            // Avalonia.Labs.Notifications 11.3.1 is compiled against
+            // Tmds.DBus.Protocol 0.92.0 (class Connection), but the dependency
+            // graph resolves 0.94.1 (class DBusConnection), causing
+            // TypeLoadException at startup. Linux notifications are handled by
+            // FreeDesktopNotifications instead.
+            builder = builder.WithAppNotifications(new AppNotificationOptions
             {
-                // The COM activator is required for toast click callbacks:
-                // clicking a notification restores the window from the tray.
                 AppName = "Shahsavar Pomodoro 2500",
-                AppUserModelId = "ShahsavarPomodoro.Pomodoro",
-                AppIcon = Path.Combine(AppContext.BaseDirectory, "app.ico"),
-        });
+            });
+        }
 
         return builder;
     }

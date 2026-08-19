@@ -146,13 +146,25 @@ internal sealed class Program
 #if DEBUG
             .WithDeveloperTools()
 #endif
-            .WithAppNotifications(new AppNotificationOptions
+            .LogToTrace();
+
+        if (!OperatingSystem.IsLinux())
+        {
+            // Avalonia.Labs.Notifications 12.0.2 is compiled against
+            // Tmds.DBus.Protocol 0.92.0 (class Connection), but the dependency
+            // graph resolves 0.94.1 (required by Avalonia.FreeDesktop 12.1.1),
+            // where Connection was renamed to DBusConnection. Creating the
+            // Linux native manager therefore throws TypeLoadException at
+            // startup. Linux notifications are handled by
+            // FreeDesktopNotifications instead; the Labs manager is still used
+            // on Windows (WinRT toasts) and macOS (Notification Center).
+            builder = builder.WithAppNotifications(new AppNotificationOptions
             {
                 // The COM activator is required for toast click callbacks:
                 // clicking a notification restores the window from the tray.
                 AppName = "Shahsavar Pomodoro 2500",
-            })
-            .LogToTrace();
+            });
+        }
 
         return builder;
     }

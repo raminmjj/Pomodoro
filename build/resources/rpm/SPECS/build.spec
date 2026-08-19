@@ -8,6 +8,13 @@ URL:            https://github.com/raminmjj/Pomodoro
 Requires:       glibc >= 2.31
 Requires:       libstdc++
 Requires:       libicu
+Requires:       libX11
+Requires:       libXtst
+Requires:       libXt
+Requires:       libXinerama
+Requires:       libxkbcommon
+Requires:       fontconfig
+Requires:       libGL
 
 %description
 A cross-platform Pomodoro timer built with .NET and Avalonia UI.

@@ -1,5 +1,5 @@
 # Build
-[![CI/CD](https://github.com/pomodoro/pomodoro-app/actions/workflows/ci.yml/badge.svg)](https://github.com/pomodoro/pomodoro-app/actions/workflows/ci.yml)
+[![CI/CD](https://github.com/raminmjj/Pomodoro/actions/workflows/ci.yml/badge.svg)](https://github.com/raminmjj/Pomodoro/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 A minimal, focused Pomodoro timer built with **.NET 10 + Avalonia 11.3 + SQLite**.

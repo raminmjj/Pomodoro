@@ -12,8 +12,8 @@
       activity tracking during breaks, and beautiful daily reports.
     </p>
   </description>
-  <url type="homepage">https://github.com/pomodoro/pomodoro-app</url>
-  <url type="bugtracker">https://github.com/pomodoro/pomodoro-app/issues</url>
+  <url type="homepage">https://github.com/raminmjj/Pomodoro</url>
+  <url type="bugtracker">https://github.com/raminmjj/Pomodoro/issues</url>
   <launchable type="desktop-id">com.pomodoro.Pomodoro.desktop</launchable>
   <provides>
     <binary>pomodoro</binary>

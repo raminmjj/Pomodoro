@@ -14,8 +14,8 @@
     <AssemblyTitle>Shahsavar Pomodoro 2500</AssemblyTitle>
     <Copyright>Copyright (c) 2026 Pomodoro</Copyright>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
-    <PackageProjectUrl>https://github.com/pomodoro/pomodoro-app</PackageProjectUrl>
-    <RepositoryUrl>https://github.com/pomodoro/pomodoro-app</RepositoryUrl>
+    <PackageProjectUrl>https://github.com/raminmjj/Pomodoro</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/raminmjj/Pomodoro</RepositoryUrl>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)' == 'Release'">

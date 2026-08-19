@@ -17,6 +17,10 @@
     <PackageVersion Include="Avalonia.Headless.XUnit" Version="12.1.1" />
     <PackageVersion Include="Avalonia.Labs.Notifications" Version="12.0.2" />
 
+    <!-- D-Bus (classic org.freedesktop.Notifications on Linux; also a transitive
+         dependency of Avalonia.FreeDesktop 12.1.1) -->
+    <PackageVersion Include="Tmds.DBus.Protocol" Version="0.94.1" />
+
     <!-- MVVM -->
     <PackageVersion Include="CommunityToolkit.Mvvm" Version="8.4.2" />
 

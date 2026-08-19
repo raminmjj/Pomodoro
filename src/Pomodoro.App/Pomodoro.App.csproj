@@ -13,8 +13,8 @@
     <InvariantGlobalization>false</InvariantGlobalization>
     <AvaloniaUseCompiledBindingsByDefault>true</AvaloniaUseCompiledBindingsByDefault>
     <BuiltInComInteropSupport>true</BuiltInComInteropSupport>
-    <AssemblyVersion>1.0.24.0</AssemblyVersion>
-    <FileVersion>1.0.24.0</FileVersion>
+    <AssemblyVersion>1.0.25.0</AssemblyVersion>
+    <FileVersion>1.0.25.0</FileVersion>
   </PropertyGroup>
 
   <ItemGroup>

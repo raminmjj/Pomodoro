@@ -160,10 +160,21 @@ internal sealed class Program
             // graph resolves 0.94.1 (class DBusConnection), causing
             // TypeLoadException at startup. Linux notifications are handled by
             // FreeDesktopNotifications instead.
-            builder = builder.WithAppNotifications(new AppNotificationOptions
+            if (!OperatingSystem.IsLinux())
             {
-                AppName = "Shahsavar Pomodoro 2500",
-            });
+                builder = builder.WithAppNotifications(new AppNotificationOptions
+                {
+                    AppName = "Shahsavar Pomodoro 2500",
+                    AppIcon = Path.Combine(AppContext.BaseDirectory, "app.ico")
+                });
+            }
+            else
+            {
+                builder = builder.WithAppNotifications(new AppNotificationOptions
+                {
+                    AppName = "Shahsavar Pomodoro 2500",
+                });
+            }
         }
 
         return builder;

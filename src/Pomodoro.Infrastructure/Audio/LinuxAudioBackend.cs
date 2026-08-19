@@ -13,17 +13,25 @@ namespace Pomodoro.Infrastructure.Audio;
 internal sealed class LinuxAudioBackend : IPlatformAudioBackend
 {
     private Process? _process;
+    private Task? _playTask;
 
     public string Name => "paplay/aplay";
 
-    public Task PlayAsync(string wavPath, float volume, CancellationToken ct = default)
+    public async Task PlayAsync(string wavPath, float volume, CancellationToken ct = default)
     {
+        // Wait for any previous playback to finish (with a short timeout).
+        if (_playTask is { IsCompleted: false })
+        {
+            try { await _playTask.WaitAsync(TimeSpan.FromSeconds(2)); }
+            catch { /* swallow — previous playback was killed or timed out */ }
+        }
+
         _process?.Kill(entireProcessTree: true);
         _process?.Dispose();
 
         // Try PulseAudio first (modern Linux desktops)
-        var (fileName, args) = FindLinuxPlayer(wavPath);
-        if (fileName is null) return Task.CompletedTask;
+        var (fileName, args) = FindLinuxPlayer(wavPath, volume);
+        if (fileName is null) return;
 
         var psi = new ProcessStartInfo
         {
@@ -38,9 +46,9 @@ internal sealed class LinuxAudioBackend : IPlatformAudioBackend
         try
         {
             _process = Process.Start(psi);
-            if (_process is null) return Task.CompletedTask;
+            if (_process is null) return;
 
-            return Task.Run(async () =>
+            _playTask = Task.Run(async () =>
             {
                 try
                 {
@@ -54,10 +62,12 @@ internal sealed class LinuxAudioBackend : IPlatformAudioBackend
                 catch (OperationCanceledException) { /* expected */ }
                 catch (Exception) { /* swallow */ }
             }, ct);
+
+            await _playTask;
         }
         catch (Exception)
         {
-            return Task.CompletedTask;
+            // Process failed to start
         }
     }
 
@@ -83,12 +93,12 @@ internal sealed class LinuxAudioBackend : IPlatformAudioBackend
         catch { /* ignore */ }
     }
 
-    private static (string? fileName, string args) FindLinuxPlayer(string wavPath)
+    private static (string? fileName, string args) FindLinuxPlayer(string wavPath, float volume)
     {
         // PulseAudio paplay supports volume via --volume=0..65536
         if (FileExistsOnPath("paplay"))
         {
-            var volInt = (int)(Math.Clamp(1f, 0f, 1f) * 65536);
+            var volInt = (int)(Math.Clamp(volume, 0f, 1f) * 65536);
             return ("paplay", $"--volume={volInt} \"{wavPath}\"");
         }
         // ALSA aplay doesn't support volume scaling — it plays at native volume.

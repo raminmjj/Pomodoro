@@ -55,11 +55,13 @@ ARCH="$appimage_arch" ./appimagetool -v Pomodoro.AppDir "pomodoro-$VERSION.linux
 mkdir -p resources/deb/opt/pomodoro/
 mkdir -p resources/deb/usr/bin
 mkdir -p resources/deb/usr/share/applications
-mkdir -p resources/deb/usr/share/icons
+mkdir -p resources/deb/usr/share/icons/hicolor/256x256/apps
 cp -rf Pomodoro/* resources/deb/opt/pomodoro
 ln -rsf resources/deb/opt/pomodoro/pomodoro resources/deb/usr/bin
-cp -r resources/_common/applications resources/deb/usr/share
-cp -r resources/_common/icons resources/deb/usr/share
+cp resources/_common/applications/pomodoro.desktop \
+   resources/deb/usr/share/applications/com.pomodoro.Pomodoro.desktop
+cp resources/_common/icons/pomodoro.png \
+   resources/deb/usr/share/icons/hicolor/256x256/apps/com.pomodoro.Pomodoro.png
 
 installed_size=$(du -sk resources/deb | cut -f1)
 

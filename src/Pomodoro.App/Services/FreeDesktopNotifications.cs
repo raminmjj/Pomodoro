@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Threading;
 using System.Threading.Tasks;
 using Tmds.DBus.Protocol;
 
@@ -47,7 +48,7 @@ internal sealed class FreeDesktopNotifications
             {
                 writer.WriteMethodCallHeader(Service, ObjectPath, InterfaceName, "Notify", "susssasa{sv}i");
                 writer.WriteString("Pomodoro");
-                writer.WriteUInt32(0);
+                writer.WriteUInt32(0); // replaces_id = 0 (new notification)
                 writer.WriteString(iconName ?? string.Empty);
                 writer.WriteString(title);
                 writer.WriteString(body);
@@ -57,14 +58,42 @@ internal sealed class FreeDesktopNotifications
                 message = writer.CreateMessage();
             }
 
-            await DBusConnection.Session.CallMethodAsync<uint>(
+            var id = await DBusConnection.Session.CallMethodAsync<uint>(
                 message,
                 static (message, _) => message.GetBodyReader().ReadUInt32());
+
+            // Notifications with actions are treated as interactive by GNOME/XFCE
+            // and persist indefinitely regardless of the expiry timeout. Dismiss
+            // explicitly after the timeout so they don't accumulate on screen.
+            if (id > 0)
+                _ = DismissAfterDelayAsync(id, ExpireTimeoutMs);
+
             return true;
         }
         catch (Exception)
         {
             return false;
+        }
+    }
+
+    private static async Task DismissAfterDelayAsync(uint id, int delayMs)
+    {
+        try
+        {
+            await Task.Delay(delayMs);
+
+            MessageBuffer msg;
+            using (var writer = DBusConnection.Session.GetMessageWriter())
+            {
+                writer.WriteMethodCallHeader(Service, ObjectPath, InterfaceName, "CloseNotification", "u");
+                writer.WriteUInt32(id);
+                msg = writer.CreateMessage();
+            }
+            await DBusConnection.Session.CallMethodAsync(msg);
+        }
+        catch
+        {
+            // Best-effort dismiss — if D-Bus is gone, ignore.
         }
     }
 

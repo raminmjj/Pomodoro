@@ -25,6 +25,7 @@ internal sealed class FreeDesktopNotifications
     private readonly object _watchGate = new();
     private IDisposable? _actionInvokedWatch;
     private bool _watchStarted;
+    private uint _lastNotificationId;
 
     /// <summary>
     /// Raised when the user clicks on a notification. The handler runs on the
@@ -43,12 +44,17 @@ internal sealed class FreeDesktopNotifications
         {
             EnsureActionInvokedWatch();
 
+            // Use replaces_id so each new notification replaces the previous
+            // one. This prevents accumulation on desktops (like XFCE) where
+            // CloseNotification is ignored by the daemon.
+            var replacesId = _lastNotificationId;
+
             MessageBuffer message;
             using (var writer = DBusConnection.Session.GetMessageWriter())
             {
                 writer.WriteMethodCallHeader(Service, ObjectPath, InterfaceName, "Notify", "susssasa{sv}i");
                 writer.WriteString("Pomodoro");
-                writer.WriteUInt32(0); // replaces_id = 0 (new notification)
+                writer.WriteUInt32(replacesId);
                 writer.WriteString(iconName ?? string.Empty);
                 writer.WriteString(title);
                 writer.WriteString(body);
@@ -62,9 +68,10 @@ internal sealed class FreeDesktopNotifications
                 message,
                 static (message, _) => message.GetBodyReader().ReadUInt32());
 
-            // Notifications with actions are treated as interactive by GNOME/XFCE
-            // and persist indefinitely regardless of the expiry timeout. Dismiss
-            // explicitly after the timeout so they don't accumulate on screen.
+            _lastNotificationId = id;
+
+            // Also attempt CloseNotification after the timeout — works on
+            // GNOME, ignored on XFCE (replaces_id handles XFCE instead).
             if (id > 0)
                 _ = DismissAfterDelayAsync(id, ExpireTimeoutMs);
 

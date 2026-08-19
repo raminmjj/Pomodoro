@@ -95,13 +95,15 @@ internal sealed class FreeDesktopNotifications
                         var reader = message.GetBodyReader();
                         return (reader.ReadUInt32(), reader.ReadString());
                     },
-                    notification =>
+                    (_, notification) =>
                     {
-                        if (notification.HasValue && notification.Value.Item2 == DefaultAction)
+                        if (notification.Item2 == DefaultAction)
                         {
                             Activated?.Invoke();
                         }
                     },
+                    null,
+                    false,
                     ObserverFlags.None).GetAwaiter().GetResult();
             }
             catch (Exception)

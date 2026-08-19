@@ -161,33 +161,30 @@ internal sealed class Program
     {
         var builder = AppBuilder.Configure(() => new App(services, startMinimized, shutdownCts))
             .UsePlatformDetect()
-#if DEBUG
-            .WithDeveloperTools()
-#endif
             .LogToTrace();
 
         if (!OperatingSystem.IsLinux())
         {
-            // Avalonia.Labs.Notifications 12.0.2 is compiled against
+            // Avalonia.Labs.Notifications 11.3.1 is compiled against
             // Tmds.DBus.Protocol 0.92.0 (class Connection), but the dependency
-            // graph resolves 0.94.1 (required by Avalonia.FreeDesktop 12.1.1),
-            // where Connection was renamed to DBusConnection. Creating the
-            // Linux native manager therefore throws TypeLoadException at
-            // startup. Linux notifications are handled by
-            // FreeDesktopNotifications instead; the Labs manager is still used
-            // on Windows (WinRT toasts) and macOS (Notification Center).
-            builder = builder.WithAppNotifications(new AppNotificationOptions
+            // graph resolves 0.94.1 (class DBusConnection), causing
+            // TypeLoadException at startup. Linux notifications are handled by
+            // FreeDesktopNotifications instead.
+            if (!OperatingSystem.IsLinux())
             {
-                // The COM activator is required for toast click callbacks:
-                // clicking a notification restores the window from the tray.
-                AppName = "Shahsavar Pomodoro 2500",
-                // A stable AUMID + icon is what makes Windows show the app's
-                // icon (instead of the generic one) in toasts and in the
-                // notification settings page. Without it, Avalonia.Labs
-                // synthesizes an unregistered AUMID from the exe name.
-                AppUserModelId = "ShahsavarPomodoro.Pomodoro",
-                AppIcon = Path.Combine(AppContext.BaseDirectory, "app.ico"),
-            });
+                builder = builder.WithAppNotifications(new AppNotificationOptions
+                {
+                    AppName = "Shahsavar Pomodoro 2500",
+                    AppIcon = Path.Combine(AppContext.BaseDirectory, "app.ico")
+                });
+            }
+            else
+            {
+                builder = builder.WithAppNotifications(new AppNotificationOptions
+                {
+                    AppName = "Shahsavar Pomodoro 2500",
+                });
+            }
         }
 
         return builder;

@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Threading;
 using System.Threading.Tasks;
 using Tmds.DBus.Protocol;
 
@@ -24,6 +25,7 @@ internal sealed class FreeDesktopNotifications
     private readonly object _watchGate = new();
     private IDisposable? _actionInvokedWatch;
     private bool _watchStarted;
+    private uint _lastNotificationId;
 
     /// <summary>
     /// Raised when the user clicks on a notification. The handler runs on the
@@ -42,12 +44,17 @@ internal sealed class FreeDesktopNotifications
         {
             EnsureActionInvokedWatch();
 
+            // Use replaces_id so each new notification replaces the previous
+            // one. This prevents accumulation on desktops (like XFCE) where
+            // CloseNotification is ignored by the daemon.
+            var replacesId = _lastNotificationId;
+
             MessageBuffer message;
             using (var writer = DBusConnection.Session.GetMessageWriter())
             {
                 writer.WriteMethodCallHeader(Service, ObjectPath, InterfaceName, "Notify", "susssasa{sv}i");
                 writer.WriteString("Pomodoro");
-                writer.WriteUInt32(0);
+                writer.WriteUInt32(replacesId);
                 writer.WriteString(iconName ?? string.Empty);
                 writer.WriteString(title);
                 writer.WriteString(body);
@@ -57,14 +64,43 @@ internal sealed class FreeDesktopNotifications
                 message = writer.CreateMessage();
             }
 
-            await DBusConnection.Session.CallMethodAsync<uint>(
+            var id = await DBusConnection.Session.CallMethodAsync<uint>(
                 message,
                 static (message, _) => message.GetBodyReader().ReadUInt32());
+
+            _lastNotificationId = id;
+
+            // Also attempt CloseNotification after the timeout — works on
+            // GNOME, ignored on XFCE (replaces_id handles XFCE instead).
+            if (id > 0)
+                _ = DismissAfterDelayAsync(id, ExpireTimeoutMs);
+
             return true;
         }
         catch (Exception)
         {
             return false;
+        }
+    }
+
+    private static async Task DismissAfterDelayAsync(uint id, int delayMs)
+    {
+        try
+        {
+            await Task.Delay(delayMs);
+
+            MessageBuffer msg;
+            using (var writer = DBusConnection.Session.GetMessageWriter())
+            {
+                writer.WriteMethodCallHeader(Service, ObjectPath, InterfaceName, "CloseNotification", "u");
+                writer.WriteUInt32(id);
+                msg = writer.CreateMessage();
+            }
+            await DBusConnection.Session.CallMethodAsync(msg);
+        }
+        catch
+        {
+            // Best-effort dismiss — if D-Bus is gone, ignore.
         }
     }
 
@@ -95,13 +131,15 @@ internal sealed class FreeDesktopNotifications
                         var reader = message.GetBodyReader();
                         return (reader.ReadUInt32(), reader.ReadString());
                     },
-                    notification =>
+                    (_, notification) =>
                     {
-                        if (notification.HasValue && notification.Value.Item2 == DefaultAction)
+                        if (notification.Item2 == DefaultAction)
                         {
                             Activated?.Invoke();
                         }
                     },
+                    null,
+                    false,
                     ObserverFlags.None).GetAwaiter().GetResult();
             }
             catch (Exception)

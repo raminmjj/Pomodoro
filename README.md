@@ -3,7 +3,7 @@
 [![CI/CD](https://github.com/raminmjj/Pomodoro/actions/workflows/ci.yml/badge.svg)](https://github.com/raminmjj/Pomodoro/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-A minimal, focused Pomodoro timer built with **.NET 10 + Avalonia 12 + SQLite**.
+A minimal, focused Pomodoro timer built with **.NET 10 + Avalonia 11 + SQLite**.
 Compiles to native single-file binaries for **Windows**, **macOS**, and **Linux** via
 **NativeAOT** (no runtime dependency, fast startup, small binary).
 
@@ -28,13 +28,13 @@ Compiles to native single-file binaries for **Windows**, **macOS**, and **Linux*
 
 | Concern            | Library                          | Notes                                        |
 | ------------------ | -------------------------------- | -------------------------------------------- |
-| UI Framework       | Avalonia 12.1.1                  | Latest stable                                |
+| UI Framework       | Avalonia 11.3.20                 | Latest stable                                |
 | MVVM               | CommunityToolkit.Mvvm 8.4.2      | Source-generator based, AOT-safe              |
 | Database           | Microsoft.Data.Sqlite 10.0.11    | Embedded SQLite, AOT-safe (replaced LiteDB)   |
 | Activity Tracking  | SharpHook 7.1.3                  | P/Invoke wrapper, AOT-friendly                |
-| Charts             | LiveChartsCore 2.1.0-dev-798     | SkiaSharp-backed, Avalonia 12 support         |
-| Notifications      | Avalonia.Labs.Notifications 12.0.2 | WinRT toasts (Windows), D-Bus/Portal (Linux) |
-| D-Bus Protocol     | Tmds.DBus.Protocol 0.94.1        | Classic `org.freedesktop.Notifications` on Linux |
+| Charts             | LiveChartsCore 2.0.5             | SkiaSharp-backed, Avalonia bindings           |
+| Notifications      | Avalonia.Labs.Notifications 11.3.1 | WinRT toasts (Windows), D-Bus/Portal (Linux) |
+| D-Bus Protocol     | Tmds.DBus.Protocol 0.92.0        | Classic `org.freedesktop.Notifications` on Linux |
 | Audio Playback     | Pure P/Invoke (no external deps) | winmm.dll / afplay / paplay-aplay             |
 | Logging            | Serilog 4.4.0                    | File + console sinks                          |
 | DI / Host          | Microsoft.Extensions 10.0.11     | Explicit registration (no assembly scan)      |

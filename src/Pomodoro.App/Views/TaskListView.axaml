@@ -18,7 +18,7 @@
 
       <!-- Add task row -->
       <StackPanel Grid.Row="1" Orientation="Horizontal" Spacing="8" Margin="0,0,0,16">
-        <TextBox Text="{Binding NewTaskTitle}" PlaceholderText="Add a new task…"
+        <TextBox Text="{Binding NewTaskTitle}" Watermark="Add a new task…"
                  Width="320" KeyDown="OnAddKeyDown" />
         <Button Content="+ Add" Classes="Primary" Command="{Binding AddCommand}" />
       </StackPanel>

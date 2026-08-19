@@ -6,20 +6,17 @@
 
   <ItemGroup>
     <!-- Avalonia UI -->
-    <PackageVersion Include="Avalonia" Version="12.1.1" />
-    <PackageVersion Include="Avalonia.Desktop" Version="12.1.1" />
-    <PackageVersion Include="Avalonia.Themes.Fluent" Version="12.1.1" />
-    <PackageVersion Include="Avalonia.Native" Version="12.1.1" />
-    <PackageVersion Include="Avalonia.Win32" Version="12.1.1" />
-    <PackageVersion Include="Avalonia.X11" Version="12.1.1" />
-    <PackageVersion Include="AvaloniaUI.DiagnosticsSupport" Version="2.2.3" />
-    <PackageVersion Include="Avalonia.Headless" Version="12.1.1" />
-    <PackageVersion Include="Avalonia.Headless.XUnit" Version="12.1.1" />
-    <PackageVersion Include="Avalonia.Labs.Notifications" Version="12.0.2" />
-
-    <!-- D-Bus (classic org.freedesktop.Notifications on Linux; also a transitive
-         dependency of Avalonia.FreeDesktop 12.1.1) -->
-    <PackageVersion Include="Tmds.DBus.Protocol" Version="0.94.1" />
+    <PackageVersion Include="Avalonia" Version="11.3.20" />
+    <PackageVersion Include="Avalonia.Desktop" Version="11.3.20" />
+    <PackageVersion Include="Avalonia.Themes.Fluent" Version="11.3.20" />
+    <PackageVersion Include="Avalonia.Native" Version="11.3.20" />
+    <PackageVersion Include="Avalonia.Win32" Version="11.3.20" />
+    <PackageVersion Include="Avalonia.X11" Version="11.3.20" />
+    <PackageVersion Include="Avalonia.Diagnostics" Version="11.3.20" />
+    <PackageVersion Include="Avalonia.Headless" Version="11.3.20" />
+    <PackageVersion Include="Avalonia.Headless.XUnit" Version="11.3.20" />
+    <PackageVersion Include="Avalonia.Labs.Notifications" Version="11.3.1" />
+    <PackageVersion Include="Tmds.DBus.Protocol" Version="0.92.0" />
 
     <!-- MVVM -->
     <PackageVersion Include="CommunityToolkit.Mvvm" Version="8.4.2" />
@@ -30,9 +27,9 @@
     <!-- Hooks -->
     <PackageVersion Include="SharpHook" Version="7.1.3" />
 
-    <!-- Charts (2.1.0-dev-798 is the first build supporting Avalonia 12) -->
-    <PackageVersion Include="LiveChartsCore" Version="2.1.0-dev-798" />
-    <PackageVersion Include="LiveChartsCore.SkiaSharpView.Avalonia" Version="2.1.0-dev-798" />
+    <!-- Charts -->
+    <PackageVersion Include="LiveChartsCore" Version="2.0.5" />
+    <PackageVersion Include="LiveChartsCore.SkiaSharpView.Avalonia" Version="2.0.5" />
 
     <!-- Microsoft.Extensions -->
     <PackageVersion Include="Microsoft.Extensions.DependencyInjection" Version="10.0.11" />
@@ -44,16 +41,15 @@
     <PackageVersion Include="Serilog" Version="4.4.0" />
     <PackageVersion Include="Serilog.Extensions.Hosting" Version="10.0.0" />
     <PackageVersion Include="Serilog.Sinks.File" Version="7.0.0" />
-    <PackageVersion Include="Serilog.Sinks.Console" Version="6.1.1" />
+    <PackageVersion Include="Serilog.Sinks.Console" Version="6.1.0" />
 
     <!-- CLI -->
     <PackageVersion Include="CommandLineParser" Version="2.9.1" />
 
-    <!-- Test (xunit.v3 pinned to 3.x — Avalonia.Headless.XUnit 12.x requires
-         xunit.v3.extensibility.core 3.2.2; xunit.v3 4.0.0 moved to MTP) -->
+    <!-- Test -->
     <PackageVersion Include="xunit.v3" Version="3.2.2" />
     <PackageVersion Include="xunit.runner.visualstudio" Version="3.1.5" />
-    <PackageVersion Include="Microsoft.NET.Test.Sdk" Version="18.9.0" />
+    <PackageVersion Include="Microsoft.NET.Test.Sdk" Version="18.8.1" />
     <PackageVersion Include="NSubstitute" Version="6.2.0" />
     <PackageVersion Include="AwesomeAssertions" Version="9.5.0" />
     <PackageVersion Include="coverlet.collector" Version="10.0.1" />

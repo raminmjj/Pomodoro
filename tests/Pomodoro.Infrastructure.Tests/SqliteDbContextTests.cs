@@ -173,9 +173,9 @@ public class SqliteDbContextTests : IDisposable
     public async Task FindAsync_FiltersInMemory()
     {
         // Insert 3 tasks with different statuses
-        await _taskRepo.UpsertAsync(new TaskItem { Id = Guid.NewGuid(), Title = "A", Status = TaskItemStatus.Pending });
-        await _taskRepo.UpsertAsync(new TaskItem { Id = Guid.NewGuid(), Title = "B", Status = TaskItemStatus.Completed });
-        await _taskRepo.UpsertAsync(new TaskItem { Id = Guid.NewGuid(), Title = "C", Status = TaskItemStatus.Pending });
+        await _taskRepo.UpsertAsync(new TaskItem { Id = Guid.NewGuid(), Title = "A", Status = TaskItemStatus.Pending }, TestContext.Current.CancellationToken);
+        await _taskRepo.UpsertAsync(new TaskItem { Id = Guid.NewGuid(), Title = "B", Status = TaskItemStatus.Completed }, TestContext.Current.CancellationToken);
+        await _taskRepo.UpsertAsync(new TaskItem { Id = Guid.NewGuid(), Title = "C", Status = TaskItemStatus.Pending }, TestContext.Current.CancellationToken);
 
         var pending = await _taskRepo.FindAsync(t => t.Status == TaskItemStatus.Pending, CT);
         pending.Should().HaveCount(2);
@@ -187,8 +187,8 @@ public class SqliteDbContextTests : IDisposable
     [Fact]
     public async Task CountAsync_ReturnsTotal()
     {
-        await _taskRepo.UpsertAsync(new TaskItem { Id = Guid.NewGuid(), Title = "X" });
-        await _taskRepo.UpsertAsync(new TaskItem { Id = Guid.NewGuid(), Title = "Y" });
+        await _taskRepo.UpsertAsync(new TaskItem { Id = Guid.NewGuid(), Title = "X" }, TestContext.Current.CancellationToken);
+        await _taskRepo.UpsertAsync(new TaskItem { Id = Guid.NewGuid(), Title = "Y" }, TestContext.Current.CancellationToken);
 
         var total = await _taskRepo.CountAsync(null, CT);
         total.Should().BeGreaterThanOrEqualTo(2);

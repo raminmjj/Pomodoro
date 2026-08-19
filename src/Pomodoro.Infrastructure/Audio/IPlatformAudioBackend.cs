@@ -16,8 +16,8 @@ internal static class PlatformAudioBackendFactory
     public static IPlatformAudioBackend Create()
     {
         if (OperatingSystem.IsWindows()) return new WindowsAudioBackend();
-        if (OperatingSystem.IsMacOS())   return new MacOsAudioBackend();
-        if (OperatingSystem.IsLinux())   return new LinuxAudioBackend();
+        if (OperatingSystem.IsMacOS()) return new MacOsAudioBackend();
+        if (OperatingSystem.IsLinux()) return new LinuxAudioBackend();
 
         // Fallback: do nothing
         return new NullAudioBackend();

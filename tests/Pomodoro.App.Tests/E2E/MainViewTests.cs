@@ -293,7 +293,7 @@ public class MainViewTests
         var vm = new SettingsViewModel(settings, autostart, CreateSoundPlayer());
 
         // Wait for LoadAsync (called in constructor)
-        await Task.Delay(100);
+        await Task.Delay(100, TestContext.Current.CancellationToken);
         Dispatcher.UIThread.RunJobs();
 
         // Modify values and save
@@ -335,7 +335,7 @@ public class MainViewTests
 
         var vm = new SettingsViewModel(settings, autostart, CreateSoundPlayer());
 
-        await Task.Delay(100);
+        await Task.Delay(100, TestContext.Current.CancellationToken);
         Dispatcher.UIThread.RunJobs();
 
         Assert.Equal(25, vm.FocusMinutes);

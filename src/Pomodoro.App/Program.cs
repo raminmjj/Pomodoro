@@ -143,6 +143,9 @@ internal sealed class Program
     {
         var builder = AppBuilder.Configure(() => new App(services, startMinimized, shutdownCts))
             .UsePlatformDetect()
+#if DEBUG
+            .WithDeveloperTools()
+#endif
             .WithAppNotifications(new AppNotificationOptions
             {
                 // The COM activator is required for toast click callbacks:

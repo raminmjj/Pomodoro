@@ -31,7 +31,7 @@ internal sealed class DesktopNotificationSink : INotificationSink
     {
         _window = window;
         _icon = LoadIcon();
-        
+
         // Subscribe to notification completed event to detect user clicks
         try
         {

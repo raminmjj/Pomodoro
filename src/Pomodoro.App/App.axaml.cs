@@ -43,7 +43,7 @@ internal sealed class App : Avalonia.Application
                 // Toast click callback fires on a COM thread — restore on the UI thread.
                 Avalonia.Threading.Dispatcher.UIThread.Post(mainWindow.RestoreFromTray);
             };
-            
+
             var notifService = _services.GetRequiredService<AvaloniaNotificationService>();
             notifService.Initialize(notifSink);
 

@@ -1,8 +1,13 @@
 using System;
+using System.Diagnostics;
 using System.IO;
+using System.IO.Pipes;
+using System.Security.Cryptography;
+using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using Avalonia;
+using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Labs.Notifications;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -23,6 +28,31 @@ internal sealed class Program
     {
         // Parse CLI args early
         var minimized = Array.Exists(args, a => a == "--minimized");
+
+        // Single-instance guard: if another instance is already running,
+        // tell it to restore from the tray and exit immediately. This avoids
+        // MicroCom's broken AOT COM interop (Release(Ccw*) NullRef).
+        const string mutexName = "Global\\Pomodoro_SingleInstance";
+        Mutex? mutex = null;
+        try
+        {
+            mutex = new Mutex(true, mutexName, out bool createdNew);
+            if (!createdNew)
+            {
+                SignalRestore();
+                return;
+            }
+        }
+        catch
+        {
+            // Mutex creation can fail in restricted environments — continue as single instance.
+        }
+
+        // Register LocalServer32 so Windows starts the exe when a toast is
+        // clicked. The new process will detect the running instance above and
+        // send a restore signal instead of launching a second copy.
+        if (OperatingSystem.IsWindows())
+            RegisterLocalServer(GetComServerGuid());
 
         // Build DI container
         var host = BuildHost(args);
@@ -87,6 +117,16 @@ internal sealed class Program
         Log.Information("Shutdown: cancellation signalled");
 
         // Dispose services synchronously (stops hooks, flushes channels, closes DB)
+        // The notification COM server must be released before the host teardown —
+        // otherwise MicroCom's CCW release races with the dispatcher shutdown and
+        // throws NullReferenceException in Release(Ccw*).
+        try
+        {
+            if (Avalonia.Labs.Notifications.NativeNotificationManager.Current is IDisposable notifDisp)
+                notifDisp.Dispose();
+        }
+        catch (Exception ex) { Log.Warning(ex, "Notification manager disposal failed"); }
+
         try
         {
             if (host is IAsyncDisposable asyncHost)
@@ -151,9 +191,6 @@ internal sealed class Program
     {
         var builder = AppBuilder.Configure(() => new App(services, startMinimized, shutdownCts))
             .UsePlatformDetect()
-#if DEBUG
-            .WithDeveloperTools()
-#endif
             .LogToTrace();
 
         if (!OperatingSystem.IsLinux())
@@ -170,6 +207,11 @@ internal sealed class Program
             {
                 // The COM activator is required for toast click callbacks:
                 // clicking a notification restores the window from the tray.
+                // DISABLED: MicroCom's AOT code generation doesn't track the
+                // NotificationActivator CCW properly — the COM runtime's
+                // Release(Ccw*) finds a null pointer and crashes. The tray
+                // icon's Open menu provides the same restore functionality.
+                DisableComServer = true,
                 AppName = "Shahsavar Pomodoro 2500",
                 // A stable AUMID + icon is what makes Windows show the app's
                 // icon (instead of the generic one) in toasts and in the
@@ -274,5 +316,105 @@ internal sealed class Program
         var backup = dbPath + ".invalid.bak";
         File.Move(dbPath, backup, overwrite: true);
         Log.Warning("Existing database file {Path} is not a valid SQLite database; moved to {Backup}", dbPath, backup);
+    }
+
+    // ──────────────────────────────────────────────────────────────
+    //  Single-instance IPC (named pipe + LocalServer32)
+    // ──────────────────────────────────────────────────────────────
+
+    /// <summary>
+    /// Compute the COM server GUID from the AUMID — must match
+    /// <c>AumidHelper.GetGuidFromId</c> so the CLSID registry entry
+    /// aligns with what the toast infrastructure expects.
+    /// </summary>
+    private static Guid GetComServerGuid()
+    {
+        const string aumid = "ShahsavarPomodoro.Pomodoro";
+        var hash = SHA1.HashData(Encoding.UTF8.GetBytes(aumid));
+        var bytes = new byte[16];
+        Array.Copy(hash, bytes, 16);
+        return new Guid(bytes);
+    }
+
+    /// <summary>
+    /// Register HKCU\Software\Classes\CLSID\{guid}\LocalServer32 so that
+    /// Windows starts the exe when a notification is clicked.
+    /// </summary>
+    [System.Runtime.Versioning.SupportedOSPlatform("windows")]
+    private static void RegisterLocalServer(Guid comGuid)
+    {
+        try
+        {
+            var exePath = Process.GetCurrentProcess().MainModule?.FileName;
+            if (string.IsNullOrEmpty(exePath)) return;
+
+            var keyPath = $@"Software\Classes\CLSID\{{{comGuid}}}\LocalServer32";
+            using var key = Microsoft.Win32.Registry.CurrentUser.CreateSubKey(keyPath);
+            key?.SetValue(null, exePath);
+        }
+        catch (Exception ex)
+        {
+            Log.Warning(ex, "Failed to register LocalServer32 for notification click-to-restore");
+        }
+    }
+
+    /// <summary>
+    /// Connect to the running instance's named pipe and send a restore signal.
+    /// Called by the second process (started by Windows on notification click).
+    /// </summary>
+    private static void SignalRestore()
+    {
+        try
+        {
+            using var client = new NamedPipeClientStream(".", "Pomodoro_Restore", PipeDirection.Out);
+            client.Connect(3000);
+            using var writer = new StreamWriter(client) { AutoFlush = true };
+            writer.WriteLine("restore");
+        }
+        catch
+        {
+            // Pipe not available — the running instance may have exited.
+        }
+    }
+
+    /// <summary>
+    /// Start listening for restore signals from second instances on a
+    /// background thread. Must be called after the Avalonia dispatcher
+    /// is running.
+    /// </summary>
+    public static void StartRestoreListener()
+    {
+        _ = Task.Run(async () =>
+        {
+            while (true)
+            {
+                try
+                {
+                    using var server = new NamedPipeServerStream(
+                        "Pomodoro_Restore", PipeDirection.In,
+                        1, PipeTransmissionMode.Byte, PipeOptions.Asynchronous);
+                    await server.WaitForConnectionAsync();
+                    using var reader = new StreamReader(server);
+                    var msg = await reader.ReadLineAsync();
+                    if (msg == "restore")
+                    {
+                        Avalonia.Threading.Dispatcher.UIThread.Post(() =>
+                        {
+                            if (Avalonia.Application.Current?.ApplicationLifetime
+                                is IClassicDesktopStyleApplicationLifetime desktop)
+                            {
+                                if (desktop.MainWindow is MainWindow mw)
+                                    mw.RestoreFromTray();
+                            }
+                        });
+                    }
+                }
+                catch
+                {
+                    // Pipe error — wait a moment and retry.
+                    await Task.Delay(1000);
+                }
+            }
+        }, CancellationToken.None);
     }
 }

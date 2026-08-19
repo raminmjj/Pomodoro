@@ -171,6 +171,12 @@ internal sealed class Program
                 // The COM activator is required for toast click callbacks:
                 // clicking a notification restores the window from the tray.
                 AppName = "Shahsavar Pomodoro 2500",
+                // A stable AUMID + icon is what makes Windows show the app's
+                // icon (instead of the generic one) in toasts and in the
+                // notification settings page. Without it, Avalonia.Labs
+                // synthesizes an unregistered AUMID from the exe name.
+                AppUserModelId = "ShahsavarPomodoro.Pomodoro",
+                AppIcon = Path.Combine(AppContext.BaseDirectory, "app.ico"),
             });
         }
 

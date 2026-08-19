@@ -13,8 +13,8 @@
     <InvariantGlobalization>false</InvariantGlobalization>
     <AvaloniaUseCompiledBindingsByDefault>true</AvaloniaUseCompiledBindingsByDefault>
     <BuiltInComInteropSupport>true</BuiltInComInteropSupport>
-    <AssemblyVersion>1.0.19.0</AssemblyVersion>
-    <FileVersion>1.0.19.0</FileVersion>
+    <AssemblyVersion>1.0.20.0</AssemblyVersion>
+    <FileVersion>1.0.20.0</FileVersion>
   </PropertyGroup>
 
   <ItemGroup>
@@ -45,6 +45,7 @@
   <ItemGroup>
     <AvaloniaResource Include="Assets\**\*" />
     <None Include="Assets\Sounds\*.wav" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="app.ico" CopyToOutputDirectory="PreserveNewest" />
     <None Update="appsettings.json" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 

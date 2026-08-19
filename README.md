@@ -47,7 +47,7 @@ Compiles to native single-file binaries for **Windows**, **macOS**, and **Linux*
 Pomodoro/
 ├── Directory.Build.props              # Common MSBuild props
 ├── Directory.Packages.props           # Central package management
-├── Pomodoro.sln
+├── Pomodoro.slnx
 ├── src/
 │   ├── Pomodoro.Domain/               # Entities, Enums, Interfaces
 │   │   ├── Entities/

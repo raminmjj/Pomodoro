@@ -1,0 +1,19 @@
+<Solution>
+  <Configurations>
+    <Platform Name="Any CPU" />
+    <Platform Name="x64" />
+    <Platform Name="x86" />
+  </Configurations>
+  <Folder Name="/src/">
+    <Project Path="src/Pomodoro.App/Pomodoro.App.csproj" />
+    <Project Path="src/Pomodoro.Application/Pomodoro.Application.csproj" />
+    <Project Path="src/Pomodoro.Domain/Pomodoro.Domain.csproj" />
+    <Project Path="src/Pomodoro.Infrastructure/Pomodoro.Infrastructure.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/Pomodoro.App.Tests/Pomodoro.App.Tests.csproj" />
+    <Project Path="tests/Pomodoro.Application.Tests/Pomodoro.Application.Tests.csproj" />
+    <Project Path="tests/Pomodoro.Domain.Tests/Pomodoro.Domain.Tests.csproj" />
+    <Project Path="tests/Pomodoro.Infrastructure.Tests/Pomodoro.Infrastructure.Tests.csproj" />
+  </Folder>
+</Solution>

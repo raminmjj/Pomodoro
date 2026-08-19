@@ -187,7 +187,7 @@ Avalonia 11.x اولین نسخه‌ی production-ready این فریم‌ورک
 
 ساختار solution بر اساس اصل Separation of Concerns و با هدف قابل‌تست بودن بالا طراحی شده است. هفت پروژه‌ی مجزا در یک solution قرار می‌گیرند که هر کدام نقش مشخصی دارند و وابستگی‌های آن‌ها به‌صورت صریح تعریف شده است. این جداسازی به تیم اجازه می‌دهد unit testهای مستقل برای هر لایه بنویسد و در آینده امکان جایگزینی پیاده‌سازی‌ها را فراهم می‌سازد.
 
-نام solution پیشنهادی `Pomodoro.sln` است که در مسیر ریشه‌ی پروژه قرار می‌گیرد. تمام پروژه‌ها در پوشه‌ی `src/` قرار می‌گیرند و تست‌ها در پوشه‌ی `tests/`. Central Package Management با فایل Directory.Packages.props در ریشه‌ی solution فعال می‌شود تا نسخه‌ی تمام پکیج‌ها در یک نقطه مدیریت شود.
+نام solution پیشنهادی `Pomodoro.slnx` است که در مسیر ریشه‌ی پروژه قرار می‌گیرد. تمام پروژه‌ها در پوشه‌ی `src/` قرار می‌گیرند و تست‌ها در پوشه‌ی `tests/`. Central Package Management با فایل Directory.Packages.props در ریشه‌ی solution فعال می‌شود تا نسخه‌ی تمام پکیج‌ها در یک نقطه مدیریت شود.
 
 ### 4.2 درخت پروژه
 
@@ -195,7 +195,7 @@ Avalonia 11.x اولین نسخه‌ی production-ready این فریم‌ورک
 Pomodoro/
 ├── Directory.Packages.props        # Central Package Management
 ├── Directory.Build.props           # Common MSBuild props
-├── Pomodoro.sln
+├── Pomodoro.slnx
 ├── src/
 │   ├── Pomodoro.Domain/            # Entities, Enums, Interfaces
 │   │   ├── Pomodoro.Domain.csproj

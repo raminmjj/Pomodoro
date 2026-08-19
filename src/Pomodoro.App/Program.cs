@@ -110,13 +110,21 @@ internal sealed class Program
 
     private static IHost BuildHost(string[] args)
     {
-        var appDataDir = GetAppDataDirectory();
+        var appDataDir = GetAppDataDirectory(out var usedFallback);
         var dbPath = Path.Combine(appDataDir, "pomodoro.db");
         var logsDir = Path.Combine(appDataDir, "logs");
         var soundsDir = Path.Combine(AppContext.BaseDirectory, "Assets", "Sounds");
 
         var serilogLogger = Pomodoro.Infrastructure.Logging.LoggingConfigurator.Configure(logsDir);
         Log.Logger = serilogLogger;
+        if (usedFallback)
+            Log.Warning("App data directory not writable ({BaseDir}); using per-user data directory {DataDir}",
+                AppContext.BaseDirectory, appDataDir);
+
+        // A stale non-SQLite file (e.g. from the pre-SQLite LiteDB era) at the
+        // data path crashes startup with "file is not a database". Detect it by
+        // header and move it aside so a fresh database can be created.
+        EnsureDatabaseFileIsValid(dbPath);
 
         var host = Host.CreateDefaultBuilder(args)
             .UseSerilog()
@@ -209,11 +217,56 @@ internal sealed class Program
         }, CancellationToken.None);
     }
 
-    private static string GetAppDataDirectory()
+    private static string GetAppDataDirectory(out bool usedFallback)
     {
+        usedFallback = false;
+
+        // Portable-first: store data next to the executable so the app can be
+        // carried around as a folder. If the location is not writable (e.g. the
+        // deb/rpm packages install to /opt/pomodoro, which is root-owned and
+        // read-only), fall back to the per-user data directory.
         var baseDir = AppContext.BaseDirectory;
         var dir = Path.Combine(baseDir, "PomodoroData");
-        if (!Directory.Exists(dir)) Directory.CreateDirectory(dir);
-        return dir;
+        try
+        {
+            Directory.CreateDirectory(dir);
+            // Probe writability (CreateDirectory is a no-op on existing dirs).
+            using (File.Create(Path.Combine(dir, ".write-test"), 1, FileOptions.DeleteOnClose)) { }
+            return dir;
+        }
+        catch (Exception ex)
+        {
+            Log.Warning(ex, "App data directory not writable ({Dir}); falling back to per-user data directory", dir);
+            usedFallback = true;
+
+            var localAppData = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
+            var fallback = string.IsNullOrEmpty(localAppData) ? dir : Path.Combine(localAppData, "Pomodoro");
+            Directory.CreateDirectory(fallback);
+            return fallback;
+        }
+    }
+
+    private static void EnsureDatabaseFileIsValid(string dbPath)
+    {
+        if (!File.Exists(dbPath)) return;
+        try
+        {
+            using var fs = File.OpenRead(dbPath);
+            if (fs.Length >= 16)
+            {
+                Span<byte> header = stackalloc byte[16];
+                fs.ReadExactly(header);
+                if (header.SequenceEqual("SQLite format 3\0"u8)) return;
+            }
+        }
+        catch (Exception ex)
+        {
+            Log.Warning(ex, "Could not inspect existing database file {Path}", dbPath);
+            return;
+        }
+
+        var backup = dbPath + ".invalid.bak";
+        File.Move(dbPath, backup, overwrite: true);
+        Log.Warning("Existing database file {Path} is not a valid SQLite database; moved to {Backup}", dbPath, backup);
     }
 }

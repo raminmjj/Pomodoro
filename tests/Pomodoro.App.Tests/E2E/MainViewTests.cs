@@ -382,4 +382,36 @@ public class MainViewTests
         Assert.False(vm.CanPause);
         Assert.False(vm.CanStop);
     }
+
+    // ──────────────────────────────────────────────
+    //  9. Tick scheduler binds to the UI thread
+    // ──────────────────────────────────────────────
+
+    [Fact]
+    public void TickScheduler_TimerIsBoundToUiThreadDispatcher()
+    {
+        // Regression test for the Avalonia 12 DispatcherTimer breaking change:
+        // the 3-arg DispatcherTimer constructor binds to Dispatcher.CurrentDispatcher
+        // (not Dispatcher.UIThread as in 11.x). DispatcherTimerTickScheduler is
+        // constructed on a thread-pool thread (see Program.StartEngineTickLoop),
+        // so it must bind to Dispatcher.UIThread explicitly or the timer never fires.
+        // The scheduler is constructed on a real background thread to replicate
+        // production. No await/Task.Run here — the headless harness's sync context
+        // destabilizes other tests when this test yields to the thread pool.
+        var uiThread = Dispatcher.UIThread;
+        Dispatcher? bound = null;
+        using var gate = new ManualResetEventSlim();
+
+        var thread = new Thread(() =>
+        {
+            using var scheduler = new DispatcherTimerTickScheduler();
+            bound = scheduler.Dispatcher;
+            gate.Set();
+        });
+        thread.Start();
+
+        Assert.True(gate.Wait(TimeSpan.FromSeconds(5), TestContext.Current.CancellationToken), "Scheduler construction timed out");
+        thread.Join();
+        Assert.Same(uiThread, bound);
+    }
 }

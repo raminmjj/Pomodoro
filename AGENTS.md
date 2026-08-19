@@ -76,7 +76,7 @@ Package versions are centrally managed in `Directory.Packages.props`. Never add 
 - **Autostart**: Platform-specific implementations selected via `AutoStartServiceFactory` (Registry on Windows, LaunchAgent on macOS, systemd --user on Linux).
 - **Activity tracking**: SharpHook uses P/Invoke. `NullActivityTracker` exists as a fallback.
 - **Database**: SQLite via `Microsoft.Data.Sqlite`. Schema managed by `SqliteDbContext` with idempotent migrations.
-- **Data directory**: `%LOCALAPPDATA%/Pomodoro/` on Windows, equivalent on other platforms. DB file: `pomodoro.db`.
+- **Data directory**: portable-first — `<app root>/PomodoroData/` next to the executable (DB file `pomodoro.db`); falls back to `%LOCALAPPDATA%/Pomodoro/` (or equivalent) when the app root is not writable (e.g. `/opt/pomodoro` deb install). A stale non-SQLite `pomodoro.db` (LiteDB-era leftovers) is detected by header and moved to `pomodoro.db.invalid.bak`.
 - **Sounds**: Bundled WAV files in `Assets/Sounds/` (bell.wav, chime.wav, digital.wav), copied to output.
 - **Notifications**: `Avalonia.Labs.Notifications` for OS-level toasts. `DesktopNotificationSink` handles click-to-restore via `NotificationCompleted` event (`e.IsActivated`). Works even when app is minimized to tray.
 

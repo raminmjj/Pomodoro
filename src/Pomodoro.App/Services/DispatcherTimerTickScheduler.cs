@@ -14,9 +14,23 @@ internal sealed class DispatcherTimerTickScheduler : ITickScheduler, IDisposable
 
     public event EventHandler? Tick;
 
+    /// <summary>The dispatcher the internal timer is bound to (used by tests).</summary>
+    internal Dispatcher Dispatcher => _timer.Dispatcher;
+
     public DispatcherTimerTickScheduler()
     {
-        _timer = new DispatcherTimer(TimeSpan.FromSeconds(1), DispatcherPriority.Normal, OnTick);
+        // Bind explicitly to the UI thread's dispatcher. The Avalonia 12
+        // DispatcherTimer(interval, priority, callback) constructor binds to
+        // Dispatcher.CurrentDispatcher instead of Dispatcher.UIThread (a
+        // breaking change from 11.x), and this class may be constructed on a
+        // thread-pool thread (see Program.StartEngineTickLoop), where
+        // CurrentDispatcher is a dispatcher with no message loop — the timer
+        // would never fire.
+        _timer = new DispatcherTimer(DispatcherPriority.Normal, Dispatcher.UIThread)
+        {
+            Interval = TimeSpan.FromSeconds(1),
+        };
+        _timer.Tick += OnTick;
     }
 
     public void Start() => _timer.Start();

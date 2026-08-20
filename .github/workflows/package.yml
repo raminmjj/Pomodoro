@@ -6,6 +6,10 @@ on:
         description: Pomodoro package version
         required: true
         type: string
+      rpm_version:
+        description: RPM-compatible version string
+        required: true
+        type: string
 jobs:
   windows:
     name: Package Windows
@@ -92,6 +96,7 @@ jobs:
       - name: Package
         env:
           VERSION: ${{ inputs.version }}
+          RPM_VERSION: ${{ inputs.rpm_version }}
           RUNTIME: ${{ matrix.runtime }}
           APPIMAGE_EXTRACT_AND_RUN: 1
         run: |

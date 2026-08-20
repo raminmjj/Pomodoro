@@ -38,6 +38,7 @@ jobs:
       version: ${{ steps.version.outputs.version }}
       debian_version: ${{ steps.version.outputs.debian_version }}
       product_version: ${{ steps.version.outputs.product_version }}
+      rpm_version: ${{ steps.version.outputs.rpm_version }}
     steps:
       - name: Checkout sources
         uses: actions/checkout@v6
@@ -56,6 +57,9 @@ jobs:
           # debian: replace '-' with '~'
           DEBIAN_VERSION="${CANONICAL//-/~}"
 
+          # rpm: replace '-' with '_' (RPM doesn't allow hyphens in version)
+          RPM_VERSION="${CANONICAL//-/_}"
+
           # product_version for Windows: keep up to 4 numeric parts, fill with zeros
           # extract numeric parts from canonical (non-numeric parts become zeros)
           # Example: 1.2.3-dev -> 1.2.3.0 ; 0.0.0-dev -> 0.0.0.0
@@ -67,6 +71,7 @@ jobs:
           # export outputs for the workflow
           echo "version=$CANONICAL" >> "$GITHUB_OUTPUT"
           echo "debian_version=$DEBIAN_VERSION" >> "$GITHUB_OUTPUT"
+          echo "rpm_version=$RPM_VERSION" >> "$GITHUB_OUTPUT"
           echo "product_version=$PRODUCT_VERSION" >> "$GITHUB_OUTPUT"
   package:
     needs: [build, version]

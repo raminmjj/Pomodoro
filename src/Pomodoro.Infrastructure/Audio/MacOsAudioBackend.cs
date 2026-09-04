@@ -16,7 +16,10 @@ namespace Pomodoro.Infrastructure.Audio;
 /// </summary>
 internal sealed class MacOsAudioBackend : IPlatformAudioBackend
 {
+    private readonly ILogger? _logger;
     private Process? _process;
+
+    public MacOsAudioBackend(ILogger? logger = null) => _logger = logger;
 
     public string Name => "afplay";
 
@@ -45,15 +48,20 @@ internal sealed class MacOsAudioBackend : IPlatformAudioBackend
                 try
                 {
                     using var linked = CancellationTokenSource.CreateLinkedTokenSource(ct);
-                    linked.Token.Register(() => _process.Kill(entireProcessTree: true));
+                    linked.Token.Register(() =>
+                    {
+                        try { _process.Kill(entireProcessTree: true); }
+                        catch (Exception ex) { _logger?.LogDebug(ex, "Failed to kill afplay on cancel"); }
+                    });
                     await _process.WaitForExitAsync(linked.Token);
                 }
                 catch (OperationCanceledException) { /* expected on stop */ }
-                catch (Exception) { /* swallow */ }
+                catch (Exception ex) { _logger?.LogDebug(ex, "afplay wait failed"); }
             }, ct);
         }
-        catch (Exception)
+        catch (Exception ex)
         {
+            _logger?.LogDebug(ex, "Failed to start afplay");
             return Task.CompletedTask;
         }
     }
@@ -65,7 +73,7 @@ internal sealed class MacOsAudioBackend : IPlatformAudioBackend
             if (_process is { HasExited: false })
                 _process.Kill(entireProcessTree: true);
         }
-        catch { /* swallow */ }
+        catch (Exception ex) { _logger?.LogDebug(ex, "Failed to stop afplay playback"); }
         return Task.CompletedTask;
     }
 
@@ -77,6 +85,6 @@ internal sealed class MacOsAudioBackend : IPlatformAudioBackend
                 _process.Kill(entireProcessTree: true);
             _process?.Dispose();
         }
-        catch { /* ignore */ }
+        catch (Exception ex) { _logger?.LogDebug(ex, "Failed to dispose afplay backend"); }
     }
 }

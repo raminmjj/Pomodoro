@@ -81,13 +81,13 @@ public sealed class MacAutoStartService : IAutoStartService
         return Task.CompletedTask;
     }
 
-    private static void RunShell(string args)
+    private void RunShell(string args)
     {
         try
         {
             var p = Process.Start("launchctl", args);
             p?.WaitForExit(2000);
         }
-        catch { /* ignore */ }
+        catch (Exception ex) { _logger.LogDebug(ex, "launchctl {Args} failed", args); }
     }
 }

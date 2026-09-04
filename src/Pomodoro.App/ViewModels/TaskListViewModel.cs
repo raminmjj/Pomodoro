@@ -3,6 +3,7 @@ using System.Collections.ObjectModel;
 using System.Threading.Tasks;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using Microsoft.Extensions.Logging;
 using Pomodoro.App.Services;
 using Pomodoro.Domain.Enums;
 using Pomodoro.Domain.Interfaces;
@@ -20,7 +21,9 @@ public sealed partial class TaskListViewModel : BaseViewModel
     [ObservableProperty] private string _newTaskTitle = string.Empty;
     [ObservableProperty] private TaskItem? _selectedTask;
 
-    public TaskListViewModel(ITaskService taskService, INavigationService navigation)
+    public TaskListViewModel(ITaskService taskService, INavigationService navigation,
+        ILogger<TaskListViewModel>? logger = null)
+        : base(logger)
     {
         _taskService = taskService;
         _navigation = navigation;
@@ -29,10 +32,10 @@ public sealed partial class TaskListViewModel : BaseViewModel
         navigation.ViewChanged += view =>
         {
             if (view == AppView.TaskList)
-                _ = LoadAsync();
+                FireAndForget(LoadAsync);
         };
 
-        _ = LoadAsync();
+        FireAndForget(LoadAsync);
     }
 
     [RelayCommand]

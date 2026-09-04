@@ -12,8 +12,11 @@ namespace Pomodoro.Infrastructure.Audio;
 /// </summary>
 internal sealed class LinuxAudioBackend : IPlatformAudioBackend
 {
+    private readonly ILogger? _logger;
     private Process? _process;
     private Task? _playTask;
+
+    public LinuxAudioBackend(ILogger? logger = null) => _logger = logger;
 
     public string Name => "paplay/aplay";
 
@@ -23,7 +26,7 @@ internal sealed class LinuxAudioBackend : IPlatformAudioBackend
         if (_playTask is { IsCompleted: false })
         {
             try { await _playTask.WaitAsync(TimeSpan.FromSeconds(2)); }
-            catch { /* swallow — previous playback was killed or timed out */ }
+            catch (Exception ex) { _logger?.LogDebug(ex, "Previous playback did not finish cleanly"); }
         }
 
         _process?.Kill(entireProcessTree: true);
@@ -55,19 +58,21 @@ internal sealed class LinuxAudioBackend : IPlatformAudioBackend
                     using var linked = CancellationTokenSource.CreateLinkedTokenSource(ct);
                     linked.Token.Register(() =>
                     {
-                        try { _process.Kill(entireProcessTree: true); } catch { }
+                        try { _process.Kill(entireProcessTree: true); }
+                        catch (Exception ex) { _logger?.LogDebug(ex, "Failed to kill audio process on cancel"); }
                     });
                     await _process.WaitForExitAsync(linked.Token);
                 }
                 catch (OperationCanceledException) { /* expected */ }
-                catch (Exception) { /* swallow */ }
+                catch (Exception ex) { _logger?.LogDebug(ex, "Audio playback wait failed"); }
             }, ct);
 
             await _playTask;
         }
-        catch (Exception)
+        catch (Exception ex)
         {
             // Process failed to start
+            _logger?.LogDebug(ex, "Failed to start Linux audio player");
         }
     }
 
@@ -78,7 +83,7 @@ internal sealed class LinuxAudioBackend : IPlatformAudioBackend
             if (_process is { HasExited: false })
                 _process.Kill(entireProcessTree: true);
         }
-        catch { /* swallow */ }
+        catch (Exception ex) { _logger?.LogDebug(ex, "Failed to stop Linux audio playback"); }
         return Task.CompletedTask;
     }
 
@@ -90,10 +95,10 @@ internal sealed class LinuxAudioBackend : IPlatformAudioBackend
                 _process.Kill(entireProcessTree: true);
             _process?.Dispose();
         }
-        catch { /* ignore */ }
+        catch (Exception ex) { _logger?.LogDebug(ex, "Failed to dispose Linux audio backend"); }
     }
 
-    private static (string? fileName, string args) FindLinuxPlayer(string wavPath, float volume)
+    private (string? fileName, string args) FindLinuxPlayer(string wavPath, float volume)
     {
         // PulseAudio paplay supports volume via --volume=0..65536
         if (FileExistsOnPath("paplay"))
@@ -109,7 +114,7 @@ internal sealed class LinuxAudioBackend : IPlatformAudioBackend
         return (null, string.Empty);
     }
 
-    private static bool FileExistsOnPath(string fileName)
+    private bool FileExistsOnPath(string fileName)
     {
         foreach (var dir in (Environment.GetEnvironmentVariable("PATH") ?? "").Split(Path.PathSeparator))
         {
@@ -119,7 +124,7 @@ internal sealed class LinuxAudioBackend : IPlatformAudioBackend
                 var path = Path.Combine(dir.Trim('"'), fileName);
                 if (File.Exists(path)) return true;
             }
-            catch { /* ignore */ }
+            catch (Exception ex) { _logger?.LogDebug(ex, "Failed to probe PATH entry for {Player}", fileName); }
         }
         return false;
     }

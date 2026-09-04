@@ -19,12 +19,6 @@ internal sealed class DispatcherTimerTickScheduler : ITickScheduler, IDisposable
 
     public DispatcherTimerTickScheduler()
     {
-        /*        _timer = new DispatcherTimer(DispatcherPriority.Normal, Dispatcher.UIThread)
-                {
-                    Interval = TimeSpan.FromSeconds(1),
-                };
-                _timer.Tick += OnTick;
-        */
         _timer = new DispatcherTimer(TimeSpan.FromSeconds(1), DispatcherPriority.Normal, OnTick);
     }
 

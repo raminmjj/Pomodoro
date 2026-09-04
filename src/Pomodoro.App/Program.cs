@@ -198,7 +198,7 @@ internal sealed class Program
         evaluator.AlertRaised += async (_, e) =>
         {
             try { await notifications.ShowOverActivityAlertAsync(e.Message); }
-            catch { /* swallow */ }
+            catch (Exception ex) { Log.Debug(ex, "Failed to show over-activity alert"); }
         };
     }
 

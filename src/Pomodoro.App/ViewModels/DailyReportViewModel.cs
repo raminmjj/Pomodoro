@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 using Avalonia.Threading;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using Microsoft.Extensions.Logging;
 using LiveChartsCore;
 using LiveChartsCore.SkiaSharpView;
 using LiveChartsCore.SkiaSharpView.Painting;
@@ -32,7 +33,7 @@ public sealed partial class DailyReportViewModel : BaseViewModel
     partial void OnSelectedDateChanged(DateTimeOffset? value)
     {
         if (value.HasValue)
-            _ = LoadReportAsync(value.Value.DateTime);
+            FireAndForget(() => LoadReportAsync(value.Value.DateTime));
     }
 
     private ISeries[] _timelineSeries = Array.Empty<ISeries>();
@@ -98,15 +99,17 @@ public sealed partial class DailyReportViewModel : BaseViewModel
         private set => SetProperty(ref _taskActivityYAxes, value);
     }
 
-    public DailyReportViewModel(IReportingService reporting, INavigationService navigation)
+    public DailyReportViewModel(IReportingService reporting, INavigationService navigation,
+        ILogger<DailyReportViewModel>? logger = null)
+        : base(logger)
     {
         _reporting = reporting;
         navigation.ViewChanged += view =>
         {
             if (view == AppView.DailyReport)
-                _ = LoadReportAsync(DateTime.Today);
+                FireAndForget(() => LoadReportAsync(DateTime.Today));
         };
-        _ = LoadReportAsync(DateTime.Today);
+        FireAndForget(() => LoadReportAsync(DateTime.Today));
     }
 
     [RelayCommand]

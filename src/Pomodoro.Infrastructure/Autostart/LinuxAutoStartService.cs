@@ -108,7 +108,7 @@ public sealed class LinuxAutoStartService : IAutoStartService
         return Task.CompletedTask;
     }
 
-    private static bool HasSystemdUser()
+    private bool HasSystemdUser()
     {
         try
         {
@@ -122,10 +122,14 @@ public sealed class LinuxAutoStartService : IAutoStartService
             p?.WaitForExit(1000);
             return p?.ExitCode == 0 || p?.ExitCode == 1;  // 1 = degraded but running
         }
-        catch { return false; }
+        catch (Exception ex)
+        {
+            _logger.LogDebug(ex, "systemd --user probe failed; falling back to XDG autostart");
+            return false;
+        }
     }
 
-    private static bool IsSystemdEnabled()
+    private bool IsSystemdEnabled()
     {
         try
         {
@@ -139,16 +143,20 @@ public sealed class LinuxAutoStartService : IAutoStartService
             p?.WaitForExit(1000);
             return p?.ExitCode == 0;
         }
-        catch { return false; }
+        catch (Exception ex)
+        {
+            _logger.LogDebug(ex, "systemd is-enabled probe failed");
+            return false;
+        }
     }
 
-    private static void RunShell(string args)
+    private void RunShell(string args)
     {
         try
         {
             var p = Process.Start("systemctl", $"--user {args}");
             p?.WaitForExit(2000);
         }
-        catch { /* ignore */ }
+        catch (Exception ex) { _logger.LogDebug(ex, "systemctl --user {Args} failed", args); }
     }
 }

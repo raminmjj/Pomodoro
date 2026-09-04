@@ -1,6 +1,17 @@
 name: Build
 on:
   workflow_call:
+    inputs:
+      version:
+        description: Package version (from tag, e.g. 1.2.3 or 0.0.0-dev)
+        required: false
+        type: string
+        default: '0.0.0-dev'
+      product_version:
+        description: 4-part numeric Windows version (e.g. 1.2.3.0)
+        required: false
+        type: string
+        default: '0.0.0.0'
 jobs:
   build:
     strategy:
@@ -60,9 +71,9 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y llvm gcc-aarch64-linux-gnu
       - name: Build
-        run: dotnet build -c Release
+        run: dotnet build -c Release -p:Version=${{ inputs.version }} -p:AssemblyVersion=${{ inputs.product_version }} -p:FileVersion=${{ inputs.product_version }}
       - name: Publish
-        run: dotnet publish src/Pomodoro.App/Pomodoro.App.csproj -c Release -o publish -r ${{ matrix.runtime }} -p:PublishAot=true
+        run: dotnet publish src/Pomodoro.App/Pomodoro.App.csproj -c Release -o publish -r ${{ matrix.runtime }} -p:PublishAot=true -p:Version=${{ inputs.version }} -p:AssemblyVersion=${{ inputs.product_version }} -p:FileVersion=${{ inputs.product_version }}
       - name: Rename executable file
         if: startsWith(matrix.runtime, 'linux-')
         run: mv publish/Pomodoro publish/pomodoro

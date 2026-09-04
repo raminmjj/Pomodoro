@@ -25,7 +25,7 @@ public sealed class CrossPlatformSoundPlayer : ISoundPlayer
     {
         _logger = logger;
         _soundsDir = soundsDir ?? Path.Combine(AppContext.BaseDirectory, "Assets", "Sounds");
-        _backend = PlatformAudioBackendFactory.Create();
+        _backend = PlatformAudioBackendFactory.Create(_logger);
         _logger.LogInformation("Sound player initialized: backend={Backend}", _backend.Name);
     }
 
@@ -57,7 +57,8 @@ public sealed class CrossPlatformSoundPlayer : ISoundPlayer
 
     public ValueTask DisposeAsync()
     {
-        try { _backend.Dispose(); } catch { /* ignore */ }
+        try { _backend.Dispose(); }
+        catch (Exception ex) { _logger.LogDebug(ex, "Failed to dispose audio backend"); }
         return ValueTask.CompletedTask;
     }
 }

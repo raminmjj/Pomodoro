@@ -11,12 +11,12 @@ Compiles to native single-file binaries via **NativeAOT** for Windows, macOS, an
 src/
 ├── Pomodoro.Domain/          # Pure entities, enums, interfaces (zero deps)
 ├── Pomodoro.Application/     # Engines, services, DTOs (depends on Domain only)
-├── Pomodoro.Infrastructure/  # LiteDB, SharpHook, Audio, Autostart, Notifications
+├── Pomodoro.Infrastructure/  # SQLite, SharpHook, Audio, Autostart, Notifications
 └── Pomodoro.App/             # Avalonia entry point, ViewModels, Views, DI
 tests/
 ├── Pomodoro.Domain.Tests/         # xunit.v3 + AwesomeAssertions
 ├── Pomodoro.Application.Tests/
-└── Pomodoro.Infrastructure.Tests/ # Integration tests with real LiteDB
+└── Pomodoro.Infrastructure.Tests/ # Integration tests with real SQLite
 ```
 
 ## Architecture Rules (Onion Architecture)
@@ -48,7 +48,7 @@ dotnet publish src/Pomodoro.App -c Release -r linux-x64 /p:PublishAot=true
 
 | Concern | Library | Notes |
 |---------|---------|-------|
-| UI | Avalonia 11.3.20 | Fluent theme, compiled bindings disabled by default |
+| UI | Avalonia 11.3.20 | Fluent theme, compiled bindings enabled |
 | MVVM | CommunityToolkit.Mvvm 8.4.2 | Source generators, AOT-safe |
 | Database | SQLite (via Microsoft.Data.Sqlite) | Embedded relational, AOT-friendly |
 | Activity Tracking | SharpHook 7.1.3 | P/Invoke, AOT-friendly |
@@ -82,7 +82,7 @@ Package versions are centrally managed in `Directory.Packages.props`. Never add 
 
 ## Avalonia-Specific Notes
 
-- Compiled bindings are **disabled** by default (`AvaloniaUseCompiledBindingsByDefault=false`)
+- Compiled bindings are **enabled** by default (`AvaloniaUseCompiledBindingsByDefault=true`)
 - Use `Avalonia.Diagnostics` only in Debug configuration
 - Views use code-behind + AXAML pattern (not pure MVVM binding-only)
 - Navigation is handled via `INavigationService` registered in App layer

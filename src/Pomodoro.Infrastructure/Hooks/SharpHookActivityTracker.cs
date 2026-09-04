@@ -197,7 +197,7 @@ public sealed class SharpHookActivityTracker : IActivityTracker
         _channel.Writer.TryComplete();
         try { await _consumerTask.WaitAsync(TimeSpan.FromSeconds(3)); }
         catch (TimeoutException) { _logger.LogWarning("Activity consumer task did not exit within timeout"); }
-        catch { /* ignore other exceptions */ }
+        catch (Exception ex) { _logger.LogDebug(ex, "Activity consumer task exited with error during dispose"); }
     }
 
     private readonly record struct MousePoint(int X, int Y);

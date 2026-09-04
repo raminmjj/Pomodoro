@@ -13,11 +13,11 @@ public interface IPlatformAudioBackend : IDisposable
 
 internal static class PlatformAudioBackendFactory
 {
-    public static IPlatformAudioBackend Create()
+    public static IPlatformAudioBackend Create(Microsoft.Extensions.Logging.ILogger? logger = null)
     {
         if (OperatingSystem.IsWindows()) return new WindowsAudioBackend();
-        if (OperatingSystem.IsMacOS()) return new MacOsAudioBackend();
-        if (OperatingSystem.IsLinux()) return new LinuxAudioBackend();
+        if (OperatingSystem.IsMacOS()) return new MacOsAudioBackend(logger);
+        if (OperatingSystem.IsLinux()) return new LinuxAudioBackend(logger);
 
         // Fallback: do nothing
         return new NullAudioBackend();

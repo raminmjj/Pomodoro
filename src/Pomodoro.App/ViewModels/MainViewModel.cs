@@ -3,6 +3,7 @@ using System.Threading.Tasks;
 using Avalonia.Threading;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using Microsoft.Extensions.Logging;
 using Pomodoro.App.Services;
 using Pomodoro.Domain.Enums;
 using Pomodoro.Domain.Events;
@@ -21,7 +22,9 @@ public sealed partial class MainViewModel : BaseViewModel, IDisposable
         IPomodoroEngine engine,
         INavigationService navigation,
         ITaskService taskService,
-        ISettingsService settings)
+        ISettingsService settings,
+        ILogger<MainViewModel>? logger = null)
+        : base(logger)
     {
         _engine = engine;
         _navigation = navigation;
@@ -30,14 +33,14 @@ public sealed partial class MainViewModel : BaseViewModel, IDisposable
         _engine.StateChanged += OnStateChanged;
         _engine.Tick += OnTick;
         _navigation.ViewChanged += OnViewChanged;
-        _ = LoadInitialTimerAsync();
+        FireAndForget(LoadInitialTimerAsync);
         UpdateCanExecute();
     }
 
     private void OnViewChanged(AppView view)
     {
         if (view == AppView.Main && CurrentPhase == SessionPhase.Idle)
-            _ = LoadInitialTimerAsync();
+            FireAndForget(LoadInitialTimerAsync);
     }
 
     private async Task LoadInitialTimerAsync()
@@ -115,7 +118,18 @@ public sealed partial class MainViewModel : BaseViewModel, IDisposable
         // Focus completed → break started: increment task pomodoro count
         if (e.Phase == SessionPhase.BreakRunning && _activeTaskId.HasValue)
         {
-            _ = _taskService.IncrementPomodoroCountAsync(_activeTaskId.Value, Guid.Empty);
+            var taskId = _activeTaskId.Value;
+            FireAndForget(async () =>
+            {
+                try
+                {
+                    await _taskService.IncrementPomodoroCountAsync(taskId, Guid.Empty);
+                }
+                catch (Exception ex)
+                {
+                    Logger?.LogWarning(ex, "Failed to increment pomodoro count for task {TaskId}", taskId);
+                }
+            });
         }
 
         Dispatcher.UIThread.Post(() =>
@@ -140,7 +154,9 @@ public sealed partial class MainViewModel : BaseViewModel, IDisposable
     {
         Dispatcher.UIThread.Post(() =>
         {
-            TimeRemaining = $"{remaining.Minutes:D2}:{remaining.Seconds:D2}";
+            TimeRemaining = remaining.TotalHours >= 1
+                ? $"{(int)remaining.TotalHours:D2}:{remaining.Minutes:D2}:{remaining.Seconds:D2}"
+                : $"{remaining.Minutes:D2}:{remaining.Seconds:D2}";
             ProgressPercent = _engine.GetProgressPercent();
         });
     }

@@ -2,6 +2,7 @@ using System;
 using System.Threading.Tasks;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using Microsoft.Extensions.Logging;
 using Pomodoro.App.Services;
 using Pomodoro.Domain.Interfaces;
 
@@ -26,12 +27,14 @@ public sealed partial class SettingsViewModel : BaseViewModel
 
     public string[] AvailableSounds { get; } = { "bell", "chime", "digital" };
 
-    public SettingsViewModel(ISettingsService settings, IAutoStartService autostart, ISoundPlayer soundPlayer)
+    public SettingsViewModel(ISettingsService settings, IAutoStartService autostart, ISoundPlayer soundPlayer,
+        ILogger<SettingsViewModel>? logger = null)
+        : base(logger)
     {
         _settings = settings;
         _autostart = autostart;
         _soundPlayer = soundPlayer;
-        _ = LoadAsync();
+        FireAndForget(LoadAsync);
     }
 
     [RelayCommand]

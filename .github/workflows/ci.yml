@@ -7,8 +7,12 @@ on:
   workflow_dispatch:
 jobs:
   test:
-    name: Test
-    runs-on: ubuntu-latest
+    name: Test (${{ matrix.os }})
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
     steps:
       - name: Checkout sources
         uses: actions/checkout@v6
@@ -29,10 +33,14 @@ jobs:
           fail_ci_if_error: false
   build:
     name: Build
-    needs: test
+    needs: [test, version]
     uses: ./.github/workflows/build.yml
+    with:
+      version: ${{ needs.version.outputs.version }}
+      product_version: ${{ needs.version.outputs.product_version }}
   version:
     name: Prepare version string
+    needs: test
     runs-on: ubuntu-latest
     outputs:
       version: ${{ steps.version.outputs.version }}

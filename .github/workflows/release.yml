@@ -4,26 +4,57 @@ on:
     tags:
       - v*
 jobs:
-  build:
-    name: Build
-    uses: ./.github/workflows/build.yml
   version:
     name: Prepare version string
     runs-on: ubuntu-latest
     outputs:
       version: ${{ steps.version.outputs.version }}
+      rpm_version: ${{ steps.version.outputs.rpm_version }}
+      product_version: ${{ steps.version.outputs.product_version }}
     steps:
+      - name: Checkout sources
+        uses: actions/checkout@v6
       - name: Output version string
         id: version
         env:
           TAG: ${{ github.ref_name }}
-        run: echo "version=${TAG#v}" >> "$GITHUB_OUTPUT"
+        run: |
+          # determine base canonical version (from tag or fallback)
+          if [[ "$TAG" == v* ]]; then
+            CANONICAL="${TAG#v}"
+          else
+            CANONICAL="0.0.0-dev"
+          fi
+
+          # rpm: replace '-' with '_' (RPM doesn't allow hyphens in version)
+          RPM_VERSION="${CANONICAL//-/_}"
+
+          # product_version for Windows: keep up to 4 numeric parts, fill with zeros
+          # extract numeric parts from canonical (non-numeric parts become zeros)
+          # Example: 1.2.3-dev -> 1.2.3.0 ; 0.0.0-dev -> 0.0.0.0
+          NUMS=$(echo "$CANONICAL" | sed -E 's/^([0-9]+(\.[0-9]+){0,3}).*$/\1/;s/\.$//')
+          IFS='.' read -r -a parts <<< "$NUMS"
+          p0=${parts[0]:-0}; p1=${parts[1]:-0}; p2=${parts[2]:-0}; p3=${parts[3]:-0}
+          PRODUCT_VERSION="$p0.$p1.$p2.$p3"
+
+          # export outputs for the workflow
+          echo "version=$CANONICAL" >> "$GITHUB_OUTPUT"
+          echo "rpm_version=$RPM_VERSION" >> "$GITHUB_OUTPUT"
+          echo "product_version=$PRODUCT_VERSION" >> "$GITHUB_OUTPUT"
+  build:
+    name: Build
+    needs: version
+    uses: ./.github/workflows/build.yml
+    with:
+      version: ${{ needs.version.outputs.version }}
+      product_version: ${{ needs.version.outputs.product_version }}
   package:
     needs: [build, version]
     name: Package
     uses: ./.github/workflows/package.yml
     with:
       version: ${{ needs.version.outputs.version }}
+      rpm_version: ${{ needs.version.outputs.rpm_version }}
   release:
     needs: [package, version]
     name: Release

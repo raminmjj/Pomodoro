@@ -93,8 +93,12 @@
         </StackPanel>
       </Border>
 
-      <Button Content="Save Settings" Classes="Primary"
-              Command="{Binding SaveCommand}" HorizontalAlignment="Right" />
+      <Grid ColumnDefinitions="*,Auto">
+        <TextBlock Text="{Binding AppVersion}" Classes="Caption"
+                   VerticalAlignment="Center" HorizontalAlignment="Left" />
+        <Button Grid.Column="1" Content="Save Settings" Classes="Primary"
+                Command="{Binding SaveCommand}" Margin="12,0,0,0" />
+      </Grid>
 
       <TextBlock Classes="Caption"
                  Text="{Binding ErrorMessage}"

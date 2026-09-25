@@ -48,13 +48,13 @@
         </Border>
         <Border Classes="Kpi" Margin="4">
           <StackPanel Spacing="2">
-            <TextBlock Classes="Caption" Text="Keystrokes" />
+            <TextBlock Classes="Caption" Text="Keystrokes(Break Time)" />
             <TextBlock Classes="H2" Text="{Binding TotalKeystrokes}" />
           </StackPanel>
         </Border>
         <Border Classes="Kpi" Margin="4">
           <StackPanel Spacing="2">
-            <TextBlock Classes="Caption" Text="Mouse Clicks" />
+            <TextBlock Classes="Caption" Text="Mouse Clicks(Break Time)" />
             <TextBlock Classes="H2" Text="{Binding TotalMouseClicks}" />
           </StackPanel>
         </Border>
@@ -74,7 +74,7 @@
       <!-- Hourly activity -->
       <Border Classes="Card">
         <StackPanel Spacing="8">
-          <TextBlock Classes="H2" Text="Hourly Activity" />
+          <TextBlock Classes="H2" Text="Activity During Breaks" />
           <lvc:CartesianChart Height="240"
                               Series="{Binding ActivitySeries}"
                               XAxes="{Binding ActivityXAxes}" />

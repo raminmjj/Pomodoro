@@ -33,7 +33,7 @@ Compiles to native single-file binaries for **Windows**, **macOS**, and **Linux*
 | Database           | Microsoft.Data.Sqlite 10.0.11    | Embedded SQLite, AOT-safe (replaced LiteDB)   |
 | Activity Tracking  | SharpHook 7.1.3                  | P/Invoke wrapper, AOT-friendly                |
 | Charts             | LiveChartsCore 2.0.5             | SkiaSharp-backed, Avalonia bindings           |
-| Notifications      | Avalonia.Labs.Notifications 11.3.1 | WinRT toasts (Windows), D-Bus/Portal (Linux) |
+| Notifications      | Avalonia.Labs.Notifications 11.3.1 | WinRT toasts (Windows/macOS); skipped on Linux (see below) |
 | D-Bus Protocol     | Tmds.DBus.Protocol 0.92.0        | Classic `org.freedesktop.Notifications` on Linux |
 | Audio Playback     | Pure P/Invoke (no external deps) | winmm.dll / afplay / paplay-aplay             |
 | Logging            | Serilog 4.4.0                    | File + console sinks                          |

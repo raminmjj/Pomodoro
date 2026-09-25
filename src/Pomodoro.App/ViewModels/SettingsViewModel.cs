@@ -1,4 +1,5 @@
 using System;
+using System.Reflection;
 using System.Threading.Tasks;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
@@ -26,6 +27,23 @@ public sealed partial class SettingsViewModel : BaseViewModel
     [ObservableProperty] private string _alarmSoundName = "bell";
 
     public string[] AvailableSounds { get; } = { "bell", "chime", "digital" };
+
+    /// <summary>Product version shown in the Settings footer (e.g. 1.0.28).</summary>
+    public string AppVersion { get; } = GetAppVersion();
+
+    private static string GetAppVersion()
+    {
+        var asm = typeof(SettingsViewModel).Assembly;
+
+        // InformationalVersion is stamped from the release tag on CI
+        // (e.g. 1.0.28); AssemblyVersion carries a 4-part numeric value.
+        var informational = asm.GetCustomAttribute<AssemblyInformationalVersionAttribute>()
+            ?.InformationalVersion?.Split('+')[0];
+        if (!string.IsNullOrEmpty(informational) && informational != "1.0.0")
+            return informational;
+
+        return asm.GetName().Version?.ToString(3) ?? string.Empty;
+    }
 
     public SettingsViewModel(ISettingsService settings, IAutoStartService autostart, ISoundPlayer soundPlayer,
         ILogger<SettingsViewModel>? logger = null)

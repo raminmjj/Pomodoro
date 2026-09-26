@@ -62,11 +62,23 @@ public sealed partial class MainViewModel : BaseViewModel, IDisposable
 
     private Guid? _activeTaskId;
 
+    /// <summary>True while a task is selected for the next focus session.</summary>
+    public bool IsActiveTaskSet => _activeTaskId.HasValue;
+
     public void SetActiveTask(Guid? taskId, string? title)
     {
         _activeTaskId = taskId;
         CurrentTaskTitle = string.IsNullOrEmpty(title) ? "(no task)" : title;
+        OnPropertyChanged(nameof(IsActiveTaskSet));
     }
+
+    /// <summary>
+    /// Clears the active task so the next Start runs "(no task)". Without this,
+    /// a previously selected task silently carries over to later sessions and
+    /// misattributes their minutes in the reports.
+    /// </summary>
+    [RelayCommand]
+    private void ClearActiveTask() => SetActiveTask(null, null);
 
     [RelayCommand(CanExecute = nameof(CanStart))]
     private async Task StartAsync()

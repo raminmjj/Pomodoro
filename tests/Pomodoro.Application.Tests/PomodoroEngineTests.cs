@@ -146,4 +146,37 @@ public class PomodoroEngineTests
 
         captured.Should().Be(SessionPhase.FocusRunning);
     }
+
+    [Fact]
+    public async Task AutoStartAfterBreak_PreservesTheOriginalTask()
+    {
+        // Zero durations let the phase complete on the first tick without waiting.
+        _settings.GetFocusDurationAsync(Arg.Any<CancellationToken>()).Returns(TimeSpan.Zero);
+        _settings.GetShortBreakDurationAsync(Arg.Any<CancellationToken>()).Returns(TimeSpan.Zero);
+        _settings.GetAutoStartBreakAsync(Arg.Any<CancellationToken>()).Returns(true);
+
+        var saved = new List<PomodoroSession>();
+        _sessionRepo.When(r => r.UpsertAsync(Arg.Any<PomodoroSession>(), Arg.Any<CancellationToken>()))
+            .Do(ci => saved.Add(ci.Arg<PomodoroSession>()));
+
+        var taskId = Guid.NewGuid();
+        await _engine.StartFocusAsync(taskId, CT);
+
+        await _engine.OnSecondTickAsync(CT);   // completes focus → break starts
+        _engine.CurrentPhase.Should().Be(SessionPhase.BreakRunning);
+
+        await _engine.OnSecondTickAsync(CT);   // completes break → auto-started focus
+        _engine.CurrentPhase.Should().Be(SessionPhase.FocusRunning);
+
+        saved.Should().HaveCount(5, "each session is upserted at start and at completion");
+        var distinct = saved.Distinct().ToList();   // reference-equal upserts collapse
+        distinct.Should().HaveCount(3);
+        distinct[0].TaskId.Should().Be(taskId);
+        distinct[1].Phase.Should().Be(SessionPhase.BreakRunning);
+        distinct[1].TaskId.Should().Be(taskId, "the break belongs to the task it interrupted");
+        distinct[2].Phase.Should().Be(SessionPhase.FocusRunning);
+        distinct[2].TaskId.Should().Be(taskId,
+            "the auto-started focus session must keep the originating task — otherwise its " +
+            "minutes are logged under '(no task)' while the UI still shows the task title");
+    }
 }

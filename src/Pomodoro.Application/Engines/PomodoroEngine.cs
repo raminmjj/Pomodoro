@@ -284,7 +284,12 @@ public sealed class PomodoroEngine : IPomodoroEngine
 
             var breakSession = new PomodoroSession
             {
-                TaskId = null,
+                // The break belongs to the task that was being worked on: keeping
+                // the TaskId lets auto-start after the break (StartFocusAsync with
+                // the completed break session) preserve the task instead of
+                // silently logging the next focus session under "(no task)" while
+                // the UI still shows the task title.
+                TaskId = completed.TaskId,
                 Phase = SessionPhase.BreakRunning,
                 StartedAt = DateTime.UtcNow,
                 PlannedDurationSec = (int)breakDuration.TotalSeconds,

@@ -1,10 +1,12 @@
 using System;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Headless;
 using Avalonia.Markup.Xaml;
+using Avalonia.Markup.Xaml.Styling;
 using Avalonia.Threading;
 using NSubstitute;
 using Pomodoro.App.Services;
@@ -21,12 +23,17 @@ namespace Pomodoro.App.Tests.E2E;
 
 /// <summary>
 /// Minimal Avalonia Application used only for headless test infrastructure.
+/// Loads the real app styles so layout tests see the same button styles
+/// (incl. Button.Secondary MinWidth=100) as the shipped application.
 /// </summary>
 public class TestApp : Avalonia.Application
 {
     public override void Initialize()
     {
-        // No XAML to load — styles are not needed for logic-level E2E tests.
+        Styles.Add(new StyleInclude(new Uri("avares://Pomodoro/"))
+        {
+            Source = new Uri("avares://Pomodoro/Styles/AppStyles.axaml"),
+        });
     }
 }
 
@@ -384,7 +391,101 @@ public class MainViewTests
     }
 
     // ──────────────────────────────────────────────
-    //  9. Tick scheduler binds to the UI thread
+    //  9. Task switching while a session is running
+    // ──────────────────────────────────────────────
+
+    [Fact]
+    public async Task SwitchTask_WhileSessionRunning_StopsPrevious_AndStartsFreshForNewTask()
+    {
+        var engine = CreateIdleEngine();
+        var vm = CreateMainViewModel(engine: engine);
+
+        // Select task A while idle: just a selection change, no engine calls.
+        await vm.SetActiveTaskAsync(Guid.NewGuid(), "Task A");
+        await engine.DidNotReceive().StopAsync(Arg.Any<CancellationToken>());
+        await engine.DidNotReceive().StartFocusAsync(Arg.Any<Guid?>(), Arg.Any<CancellationToken>());
+
+        // Simulate that a focus session is now running with task A.
+        engine.CurrentPhase.Returns(SessionPhase.FocusRunning);
+        engine.StateChanged += Raise.EventWith(
+            new PomodoroStateEventArgs(SessionPhase.FocusRunning, null, 1));
+        Dispatcher.UIThread.RunJobs();
+        Assert.Equal(SessionPhase.FocusRunning, vm.CurrentPhase);
+        vm.TimeRemaining = "17:42"; // mid-run display
+
+        // Switch to task B while running:
+        //  a) previous session must be stopped (elapsed time persisted), and
+        //  b) the new session must start with a reset timer/progress.
+        var taskB = Guid.NewGuid();
+        await vm.SetActiveTaskAsync(taskB, "Task B");
+
+        await engine.Received(1).StopAsync(Arg.Any<CancellationToken>());
+        await engine.Received(1).StartFocusAsync(taskB, Arg.Any<CancellationToken>());
+        Assert.Equal("Task B", vm.CurrentTaskTitle);
+        Assert.Equal("25:00", vm.TimeRemaining); // engine.Remaining = 25 min → reset
+        Assert.Equal(0, vm.ProgressPercent);
+
+        // Re-selecting the SAME task while running must not restart the session.
+        await vm.SetActiveTaskAsync(taskB, "Task B");
+        await engine.Received(1).StopAsync(Arg.Any<CancellationToken>());
+        await engine.Received(1).StartFocusAsync(taskB, Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task ClearTask_WhileSessionRunning_Stops_AndStartsNoTaskSession()
+    {
+        var engine = CreateIdleEngine();
+        var vm = CreateMainViewModel(engine: engine);
+
+        await vm.SetActiveTaskAsync(Guid.NewGuid(), "Task A");
+        engine.CurrentPhase.Returns(SessionPhase.FocusRunning);
+        engine.StateChanged += Raise.EventWith(
+            new PomodoroStateEventArgs(SessionPhase.FocusRunning, null, 1));
+        Dispatcher.UIThread.RunJobs();
+
+        // The clear (×) button changes the task to "(no task)" — same rules apply.
+        await vm.ClearActiveTaskCommand.ExecuteAsync(null);
+
+        await engine.Received(1).StopAsync(Arg.Any<CancellationToken>());
+        await engine.Received(1).StartFocusAsync(null, Arg.Any<CancellationToken>());
+        Assert.False(vm.IsActiveTaskSet);
+        Assert.Equal("(no task)", vm.CurrentTaskTitle);
+    }
+
+    [Fact]
+    public void ClearTaskButton_OverridesStyleMinWidth_FixedAt30()
+    {
+        // The Button.Secondary style (Styles/AppStyles.axaml) sets MinWidth=100;
+        // layout clamps Width to [MinWidth, MaxWidth], so the button must carry
+        // LOCAL MinWidth/MaxWidth overrides or it renders at 100px (reported bug).
+        var view = new MainView { DataContext = CreateMainViewModel() };
+        var button = LogicalDescendants<Button>(view)
+            .FirstOrDefault(b => b.Content as string == "×");
+        Assert.NotNull(button);
+        Assert.Equal(30d, button!.Width);
+        Assert.Equal(30d, button.MinWidth);
+        Assert.Equal(30d, button.MaxWidth);
+        // Content must be centered inside the fixed box (no default Stretch/Left).
+        Assert.Equal(Avalonia.Layout.HorizontalAlignment.Center, button.HorizontalContentAlignment);
+        Assert.Equal(Avalonia.Layout.VerticalAlignment.Center, button.VerticalContentAlignment);
+        Assert.Equal(new Thickness(0), button.Padding);
+    }
+
+    private static IEnumerable<T> LogicalDescendants<T>(Avalonia.LogicalTree.ILogical root)
+        where T : AvaloniaObject
+    {
+        foreach (var child in root.LogicalChildren)
+        {
+            if (child is T match) yield return match;
+            if (child is Avalonia.LogicalTree.ILogical logicalChild)
+            {
+                foreach (var descendant in LogicalDescendants<T>(logicalChild)) yield return descendant;
+            }
+        }
+    }
+
+    // ──────────────────────────────────────────────
+    //  10. Tick scheduler binds to the UI thread
     // ──────────────────────────────────────────────
 
     [Fact]

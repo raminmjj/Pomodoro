@@ -17,7 +17,13 @@
 
       <StackPanel Orientation="Horizontal" Spacing="6" HorizontalAlignment="Center">
         <TextBlock Classes="Caption" Text="{Binding CurrentTaskTitle}" VerticalAlignment="Center" />
-        <Button Content="×" Classes="Secondary" Padding="6,0"
+        <!-- MinWidth/MaxWidth/Padding must be set locally: the Button.Secondary
+             style (AppStyles.axaml) sets MinWidth=100, which overrides Width=30
+             in layout (Width is clamped to [MinWidth, MaxWidth]). -->
+        <Button Content="×" Classes="Secondary"
+                Width="30" MinWidth="30" MaxWidth="30" Padding="0"
+                HorizontalContentAlignment="Center" VerticalContentAlignment="Center"
+                HorizontalAlignment="Center" VerticalAlignment="Center"
                 Command="{Binding ClearActiveTaskCommand}"
                 IsVisible="{Binding IsActiveTaskSet}"
                 ToolTip.Tip="Clear active task (start next session with no task)" />

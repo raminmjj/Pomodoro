@@ -65,11 +65,26 @@ public sealed partial class MainViewModel : BaseViewModel, IDisposable
     /// <summary>True while a task is selected for the next focus session.</summary>
     public bool IsActiveTaskSet => _activeTaskId.HasValue;
 
-    public void SetActiveTask(Guid? taskId, string? title)
+    public async Task SetActiveTaskAsync(Guid? taskId, string? title)
     {
+        var previousTaskId = _activeTaskId;
         _activeTaskId = taskId;
         CurrentTaskTitle = string.IsNullOrEmpty(title) ? "(no task)" : title;
         OnPropertyChanged(nameof(IsActiveTaskSet));
+
+        // Task changed while a session is running (focus or break):
+        //  a) persist the elapsed time of the previous session immediately, and
+        //  b) start a fresh session for the new task so its timer/progress
+        //     begins from a clean state (00:00 elapsed).
+        if (CurrentPhase == SessionPhase.Idle || taskId == previousTaskId)
+            return;
+
+        await RunSafeAsync(async () =>
+        {
+            await _engine.StopAsync();          // (a) saves previous task's elapsed time
+            await _engine.StartFocusAsync(taskId); // (b) fresh session for the new task
+            SyncTimerFromEngine();
+        });
     }
 
     /// <summary>
@@ -78,7 +93,19 @@ public sealed partial class MainViewModel : BaseViewModel, IDisposable
     /// misattributes their minutes in the reports.
     /// </summary>
     [RelayCommand]
-    private void ClearActiveTask() => SetActiveTask(null, null);
+    private Task ClearActiveTask() => SetActiveTaskAsync(null, null);
+
+    /// <summary>Immediately reflects the engine's timer state in the UI.</summary>
+    private void SyncTimerFromEngine()
+    {
+        TimeRemaining = FormatRemaining(_engine.Remaining);
+        ProgressPercent = _engine.GetProgressPercent();
+    }
+
+    private static string FormatRemaining(TimeSpan remaining) =>
+        remaining.TotalHours >= 1
+            ? $"{(int)remaining.TotalHours:D2}:{remaining.Minutes:D2}:{remaining.Seconds:D2}"
+            : $"{remaining.Minutes:D2}:{remaining.Seconds:D2}";
 
     [RelayCommand(CanExecute = nameof(CanStart))]
     private async Task StartAsync()
@@ -166,9 +193,7 @@ public sealed partial class MainViewModel : BaseViewModel, IDisposable
     {
         Dispatcher.UIThread.Post(() =>
         {
-            TimeRemaining = remaining.TotalHours >= 1
-                ? $"{(int)remaining.TotalHours:D2}:{remaining.Minutes:D2}:{remaining.Seconds:D2}"
-                : $"{remaining.Minutes:D2}:{remaining.Seconds:D2}";
+            TimeRemaining = FormatRemaining(remaining);
             ProgressPercent = _engine.GetProgressPercent();
         });
     }

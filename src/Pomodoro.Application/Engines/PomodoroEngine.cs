@@ -44,6 +44,14 @@ public sealed class PomodoroEngine : IPomodoroEngine
     public event EventHandler<TimeSpan>? Tick;
 
     /// <summary>
+    /// Silence gap between repeated break-completion alarm plays while the
+    /// engine waits in Idle for the user (Auto-Start next focus unchecked).
+    /// </summary>
+    public TimeSpan BreakAlarmRepeatGap { get; set; } = TimeSpan.FromSeconds(5);
+
+    private CancellationTokenSource? _alarmRepeatCts;
+
+    /// <summary>
     /// Initializes the engine by restoring cycle counter from the last persisted session.
     /// Should be called once at startup before the tick loop begins.
     /// </summary>
@@ -97,6 +105,9 @@ public sealed class PomodoroEngine : IPomodoroEngine
                 return;
             }
         }
+
+        // The user answered — silence any repeating break-completion alarm.
+        StopBreakAlarmRepeat();
 
         var duration = await _settings.GetFocusDurationAsync(ct);
         var now = DateTime.UtcNow;
@@ -191,6 +202,9 @@ public sealed class PomodoroEngine : IPomodoroEngine
             _remaining = TimeSpan.Zero;
             _plannedDuration = TimeSpan.Zero;
         }
+
+        // Also silences a repeating break-completion alarm, if any.
+        StopBreakAlarmRepeat();
 
         // Stop activity tracking if stopping during a break
         await _activityTracker.StopTrackingAsync(ct);
@@ -341,7 +355,16 @@ public sealed class PomodoroEngine : IPomodoroEngine
                 catch (Exception ex)
                 {
                     _logger.LogError(ex, "Auto-start of focus session failed after break completion — engine remains idle");
+                    // Nobody would start the next session — keep ringing instead.
+                    StartBreakAlarmRepeat();
                 }
+            }
+            else
+            {
+                // Auto-Start is off: the engine now waits in Idle for the user.
+                // Repeat the break-completion alarm (with a gap between plays)
+                // until they start the next session.
+                StartBreakAlarmRepeat();
             }
         }
         else
@@ -377,8 +400,90 @@ public sealed class PomodoroEngine : IPomodoroEngine
         StateChanged?.Invoke(this, args);
     }
 
+    /// <summary>
+    /// Repeats the break-completion alarm while the engine waits in Idle for
+    /// the user (Auto-Start next focus unchecked). The first playback happens
+    /// in OnPhaseCompletedAsync; this loop adds replays separated by
+    /// <see cref="BreakAlarmRepeatGap"/> of silence. It stops on the next
+    /// StartFocusAsync/StopAsync or on disposal.
+    /// </summary>
+    private void StartBreakAlarmRepeat()
+    {
+        CancellationTokenSource cts;
+        lock (_stateLock)
+        {
+            try { _alarmRepeatCts?.Cancel(); }
+            catch (ObjectDisposedException) { /* previous loop already exited */ }
+            cts = new CancellationTokenSource();
+            _alarmRepeatCts = cts;
+        }
+
+        var token = cts.Token;
+        _ = Task.Run(async () =>
+        {
+            try
+            {
+                while (!token.IsCancellationRequested)
+                {
+                    try
+                    {
+                        await Task.Delay(BreakAlarmRepeatGap, token);
+                    }
+                    catch (OperationCanceledException) { return; }
+
+                    // Defensive: the engine may have moved on for another reason.
+                    if (token.IsCancellationRequested || CurrentPhase != SessionPhase.Idle)
+                        return;
+
+                    try
+                    {
+                        var soundName = await _settings.GetAlarmSoundNameAsync(token);
+                        var volume = await _settings.GetAlarmVolumeAsync(token);
+                        if (token.IsCancellationRequested) return;
+                        await _sound.PlayAsync(soundName, volume, token);
+                    }
+                    catch (OperationCanceledException) { return; }
+                    catch (Exception ex)
+                    {
+                        // Transient failures must not silence the alarm for good.
+                        _logger.LogWarning(ex, "Break-completion alarm replay failed");
+                    }
+                }
+            }
+            finally
+            {
+                cts.Dispose();
+            }
+        }, CancellationToken.None);
+    }
+
+    /// <summary>
+    /// Stops the repeating break-completion alarm and cuts any replay it is
+    /// currently playing. No-op when nothing is repeating (e.g. Auto-Start is
+    /// on, or the user already started the next session).
+    /// </summary>
+    public void StopBreakAlarmRepeat()
+    {
+        CancellationTokenSource? cts;
+        lock (_stateLock)
+        {
+            cts = _alarmRepeatCts;
+            _alarmRepeatCts = null;
+        }
+        if (cts is null) return;
+        try { cts.Cancel(); }
+        catch (ObjectDisposedException) { /* loop already exited and disposed it */ }
+
+        // Cancelling the loop's token does not abort every backend mid-play
+        // (winmm waits out the duration instead of stopping), so cut the
+        // in-flight sound explicitly. StopAsync never throws (the player
+        // wraps its backend).
+        _ = _sound.StopAsync();
+    }
+
     public async ValueTask DisposeAsync()
     {
+        StopBreakAlarmRepeat();
         await _activityTracker.StopTrackingAsync();
         Tick = null;
         StateChanged = null;

@@ -7,6 +7,7 @@ using Avalonia.Markup.Xaml;
 using Microsoft.Extensions.DependencyInjection;
 using Pomodoro.App.Services;
 using Pomodoro.App.Views;
+using Pomodoro.Domain.Interfaces;
 using Pomodoro.Infrastructure.Notifications;
 
 namespace Pomodoro.App;
@@ -46,6 +47,12 @@ internal sealed class App : Avalonia.Application
 
             var notifService = _services.GetRequiredService<AvaloniaNotificationService>();
             notifService.Initialize(notifSink);
+
+            // The user is looking at the app: silence a repeating
+            // break-completion alarm as soon as the main window is activated
+            // (taskbar/tray/notification click, Alt+Tab, etc.).
+            var engine = _services.GetRequiredService<IPomodoroEngine>();
+            mainWindow.Activated += (_, _) => engine.StopBreakAlarmRepeat();
 
             if (_startMinimized)
             {

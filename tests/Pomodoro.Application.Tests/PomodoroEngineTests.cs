@@ -179,4 +179,92 @@ public class PomodoroEngineTests
             "the auto-started focus session must keep the originating task — otherwise its " +
             "minutes are logged under '(no task)' while the UI still shows the task title");
     }
+
+    [Fact]
+    public async Task BreakCompletion_WithoutAutoStart_KeepsRingingUntilUserStartsNextSession()
+    {
+        // Zero durations let the phases complete on ticks without waiting.
+        _settings.GetFocusDurationAsync(Arg.Any<CancellationToken>()).Returns(TimeSpan.Zero);
+        _settings.GetShortBreakDurationAsync(Arg.Any<CancellationToken>()).Returns(TimeSpan.Zero);
+        _settings.GetAutoStartBreakAsync(Arg.Any<CancellationToken>()).Returns(false);
+        _engine.BreakAlarmRepeatGap = TimeSpan.FromMilliseconds(50);
+        var plays = 0;
+        _sound.When(s => s.PlayAsync(Arg.Any<string>(), Arg.Any<float>(), Arg.Any<CancellationToken>()))
+              .Do(_ => Interlocked.Increment(ref plays));
+
+        await _engine.StartFocusAsync(ct: CT);
+        await _engine.OnSecondTickAsync(CT);   // focus completes → break starts (alarm #1)
+        await _engine.OnSecondTickAsync(CT);   // break completes → Idle (alarm #2) + repeat loop
+        _engine.CurrentPhase.Should().Be(SessionPhase.Idle);
+
+        // The alarm keeps replaying with a gap while the engine waits for the user.
+        var deadline = DateTime.UtcNow.AddSeconds(10);
+        while (Volatile.Read(ref plays) < 4 && DateTime.UtcNow < deadline)
+            await Task.Delay(20, CT);
+        Volatile.Read(ref plays).Should().BeGreaterThanOrEqualTo(4);
+
+        // Starting the next session silences it.
+        await Task.Delay(100, CT);             // settle any in-flight replay
+        await _engine.StartFocusAsync(ct: CT);
+        await Task.Delay(100, CT);             // let a stray replay land, if any
+        var afterStart = Volatile.Read(ref plays);
+        await Task.Delay(300, CT);             // ~6 gaps — nothing may play
+        Volatile.Read(ref plays).Should().Be(afterStart,
+            "the alarm must stop repeating once the next focus session starts");
+    }
+
+    [Fact]
+    public async Task BreakCompletion_WithAutoStart_DoesNotRepeatAlarm()
+    {
+        _settings.GetFocusDurationAsync(Arg.Any<CancellationToken>()).Returns(TimeSpan.Zero);
+        _settings.GetShortBreakDurationAsync(Arg.Any<CancellationToken>()).Returns(TimeSpan.Zero);
+        _settings.GetAutoStartBreakAsync(Arg.Any<CancellationToken>()).Returns(true);
+        _engine.BreakAlarmRepeatGap = TimeSpan.FromMilliseconds(50);
+        var plays = 0;
+        _sound.When(s => s.PlayAsync(Arg.Any<string>(), Arg.Any<float>(), Arg.Any<CancellationToken>()))
+              .Do(_ => Interlocked.Increment(ref plays));
+
+        await _engine.StartFocusAsync(ct: CT);
+        await _engine.OnSecondTickAsync(CT);   // focus completes → break starts (alarm #1)
+        await _engine.OnSecondTickAsync(CT);   // break completes → auto-started focus (alarm #2)
+        _engine.CurrentPhase.Should().Be(SessionPhase.FocusRunning);
+
+        // Only the two phase-completion alarms may play — no ringing loop.
+        Volatile.Read(ref plays).Should().Be(2);
+        await Task.Delay(300, CT);
+        Volatile.Read(ref plays).Should().Be(2);
+    }
+
+    [Fact]
+    public async Task StopBreakAlarmRepeat_SilencesRinging_AndStopsSound()
+    {
+        _settings.GetFocusDurationAsync(Arg.Any<CancellationToken>()).Returns(TimeSpan.Zero);
+        _settings.GetShortBreakDurationAsync(Arg.Any<CancellationToken>()).Returns(TimeSpan.Zero);
+        _settings.GetAutoStartBreakAsync(Arg.Any<CancellationToken>()).Returns(false);
+        _engine.BreakAlarmRepeatGap = TimeSpan.FromMilliseconds(50);
+        var plays = 0;
+        _sound.When(s => s.PlayAsync(Arg.Any<string>(), Arg.Any<float>(), Arg.Any<CancellationToken>()))
+              .Do(_ => Interlocked.Increment(ref plays));
+
+        await _engine.StartFocusAsync(ct: CT);
+        await _engine.OnSecondTickAsync(CT);   // focus completes → break starts (alarm #1)
+        await _engine.OnSecondTickAsync(CT);   // break completes → Idle + repeat loop (alarm #2)
+
+        // Let it ring a few times.
+        var deadline = DateTime.UtcNow.AddSeconds(10);
+        while (Volatile.Read(ref plays) < 3 && DateTime.UtcNow < deadline)
+            await Task.Delay(20, CT);
+        Volatile.Read(ref plays).Should().BeGreaterThanOrEqualTo(3);
+
+        // The user activates the main window → ringing stops for good.
+        _engine.StopBreakAlarmRepeat();
+
+        await Task.Delay(100, CT);             // settle any in-flight replay
+        var after = Volatile.Read(ref plays);
+        await Task.Delay(300, CT);             // ~6 gaps — nothing may play
+        Volatile.Read(ref plays).Should().Be(after);
+
+        // The sound currently playing was cut, not just future replays.
+        await _sound.Received().StopAsync(Arg.Any<CancellationToken>());
+    }
 }

@@ -44,5 +44,12 @@ public interface IPomodoroEngine : IAsyncDisposable
     /// <summary>Called by the host's per-second timer. Updates remaining time and emits Tick.</summary>
     Task OnSecondTickAsync(CancellationToken ct = default);
 
+    /// <summary>
+    /// Stops a repeating break-completion alarm and cuts any sound it is
+    /// currently playing. No-op when nothing is repeating — intended to be
+    /// called when the user activates the app window to acknowledge the alert.
+    /// </summary>
+    void StopBreakAlarmRepeat();
+
     double GetProgressPercent();
 }
